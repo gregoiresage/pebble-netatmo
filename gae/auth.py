@@ -1,6 +1,6 @@
 import webapp2
 from urllib import urlencode
-import json, urllib2
+# import json, urllib2
 
 from secret import app_id, app_secret
 import config
@@ -18,8 +18,7 @@ class AuthRedirector(webapp2.RequestHandler):
 class AuthCallback(webapp2.RequestHandler):
     def get(self):
         self.response.headers['Content-Type'] = 'text/plain'
-        self.response.write('Code response : ')
-        self.response.write(self.request.get("code"))
+        self.response.write('Code response : ' + self.request.get("code"))
 
 application = webapp2.WSGIApplication([
     ('/auth', AuthRedirector),
