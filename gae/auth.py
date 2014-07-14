@@ -39,7 +39,7 @@ class AuthCallback(webapp2.RequestHandler):
         args["client_id"] = app_id
         args["client_secret"] = app_secret
         args["code"] = self.request.get("code")
-        # args["redirect_uri"] = config.token_redir_uri
+        args["redirect_uri"] = config.auth_redir_uri
         args["scope"] = "read_station"
         result = query_json("https://api.netatmo.net/oauth2/token", urlencode(args))
         if 'error' in result:
