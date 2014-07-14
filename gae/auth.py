@@ -8,7 +8,7 @@ import config
 class AuthRedirector(webapp2.RequestHandler):
     def get(self):
         args = self.request.GET
-        args["client_id"] = client_id
+        args["client_id"] = app_id
         args["redirect_uri"] = config.auth_redir_uri
         args["scope"] = "read_station"
         url = "https://api.netatmo.net/oauth2/authorize?"+urlencode(args)
