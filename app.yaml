@@ -5,11 +5,11 @@ api_version: 1
 threadsafe: true
 
 handlers:
-- url: /.*
-  script: gae.netatmo.application
-
 - url: /auth.*
   script: gae.auth.application
+
+- url: /.*
+  script: gae.netatmo.application
 
 libraries:
 - name: webapp2
