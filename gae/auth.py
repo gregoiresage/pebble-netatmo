@@ -47,7 +47,7 @@ class AuthCallback(webapp2.RequestHandler):
             return
 
         self.response.headers['Content-Type'] = 'text/plain'
-        self.response.write('Token response : ' + result.access_token)
+        self.response.write('Token response : ' + str(result))
 
         # self.response.location = url
         # self.response.status_int = 302
