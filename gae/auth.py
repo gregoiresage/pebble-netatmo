@@ -5,7 +5,7 @@ import json, urllib2
 from secret import app_id, app_secret
 import config
 
-def query_json(url):
+def query_json(url, data):
     """
     Query JSON data using POST request.
     Returns only data and ignores result code.
