@@ -8,6 +8,9 @@ handlers:
 - url: /.*
   script: gae.netatmo.application
 
+- url: /auth.*
+  script: gae.auth.application
+
 libraries:
 - name: webapp2
   version: latest
