@@ -10,8 +10,8 @@ def query_json(url, data):
     Query JSON data using POST request.
     Returns only data and ignores result code.
     """
-    if not (data is str):
-        data = urlencode(data)
+    # if not (data is str):
+    #     data = urlencode(data)
     try:
         return json.loads(urllib2.urlopen(url, data).read())
     except urllib2.HTTPError as e: # exception is a file-like object
