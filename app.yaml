@@ -6,7 +6,7 @@ threadsafe: true
 
 handlers:
 - url: /.*
-  script: gae.goodthink.application
+  script: gae.netatmo.application
 
 libraries:
 - name: webapp2
