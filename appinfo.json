@@ -1,0 +1,17 @@
+{
+  "uuid": "ee91d80e-9efe-4741-b5c8-7919c610b3d1",
+  "shortName": "pebble-netatmo",
+  "longName": "pebble-netatmo",
+  "companyName": "Gregoire Sage",
+  "versionCode": 1,
+  "versionLabel": "1.0.0",
+  "watchapp": {
+    "watchface": false
+  },
+  "appKeys": {
+    "dummy": 0
+  },
+  "resources": {
+    "media": []
+  }
+}
