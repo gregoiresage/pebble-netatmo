@@ -8,8 +8,8 @@ handlers:
 - url: /auth.*
   script: gae.auth.application
 
-- url: /.*
-  script: gae.netatmo.application
+- url: /
+  static_dir: gae/static
 
 libraries:
 - name: webapp2

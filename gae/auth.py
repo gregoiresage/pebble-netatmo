@@ -8,10 +8,7 @@ import config
 def query_json(url, data):
     """
     Query JSON data using POST request.
-    Returns only data and ignores result code.
     """
-    # if not (data is str):
-    #     data = urlencode(data)
     try:
         return json.loads(urllib2.urlopen(url, data).read())
     except urllib2.HTTPError as e: # exception is a file-like object
@@ -31,10 +28,15 @@ class AuthCallback(webapp2.RequestHandler):
     def get(self):
         error = self.request.get("error")
         if error:
-            self.response.status_int = 400
+            args = {}
+            args["error"] = error
+            url = "http://pebble-netatmo.appspot.com/config.html?"+urlencode(args)
+            self.response.location = url
+            self.response.status_int = 302
             return
 
-        args = self.request.GET
+        # get access token
+        args = {}
         args["grant_type"] = "authorization_code"
         args["client_id"] = app_id
         args["client_secret"] = app_secret
@@ -42,31 +44,40 @@ class AuthCallback(webapp2.RequestHandler):
         args["redirect_uri"] = config.auth_redir_uri
         args["scope"] = "read_station"
         result = query_json("https://api.netatmo.net/oauth2/token", urlencode(args))
+
         if 'error' in result:
-            self.response.status_int = 400
+            args = {}
+            args["error"] = error
+            url = "http://pebble-netatmo.appspot.com/config.html?"+urlencode(args)
+            self.response.location = url
+            self.response.status_int = 302
             return
 
-        self.response.headers['Content-Type'] = 'text/plain'
-        self.response.write('Token response : ' + result["access_token"])
+        args = {}
+        args["access_token"] = result["access_token"]
+        args["refresh_token"] = result["refresh_token"]
+        args["expires_in"] = result["expires_in"]
+        url = "http://pebble-netatmo.appspot.com/config.html?"+urlencode(args)
+        self.response.location = url
+        self.response.status_int = 302
 
-        # self.response.location = url
-        # self.response.status_int = 302
+        # self.response.headers['Content-Type'] = 'text/plain'
+        # self.response.write('Token response : ' + result["access_token"])
 
-
-# grant_type=authorization_code
-#     client_id=[YOUR_APP_ID]
-#     client_secret=[YOUR_CLIENT_SECRET]
-#     code=[CODE_RECEIVED_FROM_USER]
-#     redirect_uri=[YOUR_REDIRECT_URI]
-#     scope=[SCOPE_DOT_SEPARATED]
-
-class TokenCallback(webapp2.RequestHandler):
+class AuthRefreshAccessToken(webapp2.RequestHandler):
     def get(self):
-        self.response.headers['Content-Type'] = 'text/plain'
-        self.response.write('Code response : ' + self.request.get("code"))
+        args = {}
+        args["grant_type"] = "refresh_token"
+        args["client_id"] = app_id
+        args["client_secret"] = app_secret
+        args["refresh_token"] = self.request.get("refresh_token")
+        result = query_json("https://api.netatmo.net/oauth2/token", urlencode(args))
+
+        self.response.headers['Content-Type'] = 'application/json;charset=UTF-8'
+        self.response.write(json.dumps(result))
 
 application = webapp2.WSGIApplication([
     ('/auth', AuthRedirector),
     ('/auth/result', AuthCallback),
-    ('/auth/token', TokenCallback),
+    ('/auth/refresh', AuthRefreshAccessToken)
 ], debug=True)

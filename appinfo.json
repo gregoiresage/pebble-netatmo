@@ -1,15 +1,29 @@
 {
   "uuid": "ee91d80e-9efe-4741-b5c8-7919c610b3d1",
-  "shortName": "pebble-netatmo",
-  "longName": "pebble-netatmo",
+  "shortName": "NetAtmo",
+  "longName": "NetAtmo",
   "companyName": "Gregoire Sage",
   "versionCode": 1,
-  "versionLabel": "1.0.0",
+  "versionLabel": "1.0",
   "watchapp": {
     "watchface": false
   },
+  "capabilities": [
+    "configurable"
+  ],
   "appKeys": {
-    "dummy": 0
+    "main_temp":      0,
+    "main_temp_min":  1,
+    "main_temp_max":  2,
+    "main_co2":       3,
+    "main_humidity":  4,
+    "main_noise":     5,
+    "main_pressure":  6,
+
+    "station_temp":      100,
+    "station_temp_min":  101,
+    "station_temp_max":  102,
+    "station_humidity":  103
   },
   "resources": {
     "media": []
