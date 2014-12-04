@@ -92,35 +92,52 @@ function fetchData(){
   sendRequest(url, "GET", 
   function(e) {
     var json = JSON.parse(e);
+    console.log("Name : " +                       json.body.devices[0].module_name);
     console.log("Inside Temperature : " +         json.body.devices[0].dashboard_data.Temperature);
     console.log("Inside Temperature Min/Max: " +  json.body.devices[0].dashboard_data.min_temp + "/" + json.body.devices[0].dashboard_data.max_temp);
     console.log("Inside Humidity : " +            json.body.devices[0].dashboard_data.Humidity);
     console.log("Inside Pressure : " +            json.body.devices[0].dashboard_data.Pressure);
     console.log("Inside CO2 : " +                 json.body.devices[0].dashboard_data.CO2);
 
+    console.log("Name : " +                       json.body.modules[0].module_name);
     console.log("Outside Temperature : " +        json.body.modules[0].dashboard_data.Temperature);
     console.log("Outside Temperature Min/Max: " + json.body.modules[0].dashboard_data.min_temp + "/" + json.body.modules[0].dashboard_data.max_temp);
     console.log("Outside Humidity : " +           json.body.modules[0].dashboard_data.Humidity);
 
     var data = {};
     if(json.body.devices.length > 0){
+      var dashboard_data = [];
       var device_data = json.body.devices[0].dashboard_data;
-      data.main_temp = device_data.Temperature*10;
-      data.main_temp_min = device_data.min_temp*10;
-      data.main_temp_max = device_data.max_temp*10;
-      data.main_co2 = device_data.CO2;
-      data.main_humidity = device_data.Humidity
-      data.main_noise = device_data.Noise;
-      data.main_pressure = device_data.Pressure*10;
+      fillDashBoardData(
+        dashboard_data,
+        json.body.devices[0].module_name,
+        device_data.Temperature,
+        device_data.min_temp,
+        device_data.max_temp,
+        device_data.Humidity,      
+        device_data.Noise,
+        device_data.CO2,
+        device_data.Pressure);
+      data.module_data = dashboard_data;
     }
 
-    if(json.body.modules.length > 0){
-      var module_data = json.body.modules[0].dashboard_data;
-      data.station_temp = module_data.Temperature*10;
-      data.station_temp_min = module_data.min_temp*10;
-      data.station_temp_max = module_data.max_temp*10;
-      data.station_humidity = module_data.Humidity;
+    for(var i=0; i<json.body.modules.length; i++){
+      var dashboard_data = [];
+      var module_data = json.body.modules[i].dashboard_data;
+      fillDashBoardData(
+        dashboard_data,
+        json.body.modules[i].module_name,
+        module_data.Temperature,
+        module_data.min_temp,
+        module_data.max_temp,
+        module_data.Humidity,      
+        0xFFFF, 
+        0xFFFF, 
+        0xFFFF);
+      data['station_data_' + i] = dashboard_data;
     }
+
+    console.log(JSON.stringify(data));
 
     Pebble.sendAppMessage(data, 
       function(e) {
@@ -134,6 +151,23 @@ function fetchData(){
     console.log("Error status");
     disconnect();
   });
+}
+
+function fillDashBoardData(arr, name, temp, temp_min, temp_max, humidity, noise, co2, pressure){
+  var i = 0;
+  for(; i<name.length && i<19; i++)
+    pushUInt8(arr, name.charCodeAt(i));
+  
+  for(; i<20; i++)
+    pushUInt8(arr, 0);
+
+  pushUInt16(arr, temp*10);
+  pushUInt16(arr, temp_min*10);
+  pushUInt16(arr, temp_max*10);
+  pushUInt8(arr, humidity);         
+  pushUInt8(arr, noise);
+  pushUInt16(arr, co2);
+  pushUInt16(arr, pressure*10);
 }
 
 function renewToken(callback) {
@@ -169,3 +203,28 @@ function sendRequest(url, type, success, error, data) {
   }
   req.send(data);
 }
+
+function pushUInt8(array, value){
+   array.push(value >> 0 & 0xFF);
+}
+
+function pushUInt16(array, value){
+   array.push(value >> 0 & 0xFF);
+   array.push(value >> 8 & 0xFF);
+}
+
+function pushUInt32(array, value){
+   array.push(value >> 0 & 0xFF);
+   array.push(value >> 8 & 0xFF);
+   array.push(value >> 16 & 0xFF);
+   array.push(value >> 24 & 0xFF);
+}
+
+
+// var result = [];                 // Array of bytes that we produce
+//    pushUInt16(result, widthBytes);  // row_size_bytes
+//    pushUInt16(result, flags);       // info_flags
+//    pushUInt16(result, 0);           // bounds.origin.x
+//    pushUInt16(result, 0);           // bounds.origin.y
+//    pushUInt16(result, width);       // bounds.size.w
+//    pushUInt16(result, height);      // bounds.size.h
