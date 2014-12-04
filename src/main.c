@@ -1,5 +1,4 @@
 #include <pebble.h>
-#include "primary.h"
 #include "dashboard_data.h"
 #include "main_window.h"
 #include "main_layer.h"
