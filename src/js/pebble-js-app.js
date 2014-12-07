@@ -56,8 +56,9 @@ Pebble.addEventListener('showConfiguration', function(e) {
   read();
   var uri = HOST + '/config.html';
   if(refresh_token !== null){
-    uri += "?refresh_token=" + refresh_token;
+    uri += "?refresh_token=" + encodeURIComponent(refresh_token);
   }
+  console.log('showConfiguration ' + uri);
   Pebble.openURL(uri);
 });
 
@@ -87,7 +88,7 @@ function fetchData(){
     return renewToken(function() { fetchData() });
 
   var req = new XMLHttpRequest();
-  var url = 'https://api.netatmo.net/api/devicelist?access_token=' + access_token + '&device_id=' + main_device;
+  var url = 'https://api.netatmo.net/api/devicelist?access_token=' + encodeURIComponent(access_token) + '&device_id=' + encodeURIComponent(main_device);
   console.log(url);
   sendRequest(url, "GET", 
   function(e) {
@@ -219,12 +220,3 @@ function pushUInt32(array, value){
    array.push(value >> 16 & 0xFF);
    array.push(value >> 24 & 0xFF);
 }
-
-
-// var result = [];                 // Array of bytes that we produce
-//    pushUInt16(result, widthBytes);  // row_size_bytes
-//    pushUInt16(result, flags);       // info_flags
-//    pushUInt16(result, 0);           // bounds.origin.x
-//    pushUInt16(result, 0);           // bounds.origin.y
-//    pushUInt16(result, width);       // bounds.size.w
-//    pushUInt16(result, height);      // bounds.size.h
