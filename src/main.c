@@ -8,48 +8,52 @@
 #define KEY_STATION_1_DATA  1
 #define KEY_STATION_2_DATA  2
 #define KEY_STATION_3_DATA  3
-
-static DashboardData module_data;
-static DashboardData station_data[3];
+#define KEY_STATION_4_DATA  4
 
 static void cb_in_received_handler(DictionaryIterator *iter, void *context) {
 
+  DashboardData data;
+
   Tuple *tuple = dict_find(iter, KEY_MODULE_DATA);
   if(tuple){
-    memcpy(&module_data,&tuple->value->uint8,tuple->length);
-    printData(module_data);
-    update_main_layer(module_data);
+    memcpy(&data,&tuple->value->uint8,tuple->length);
+    setModuleData(data);
+    update_main_layer(data);
   }
-  module_data.valid = tuple != 0;
 
   tuple = dict_find(iter, KEY_STATION_1_DATA);
   if(tuple){
-    memcpy(&station_data[0],&tuple->value->uint8,tuple->length);
-    printData(station_data[0]);
-    update_station_layer(station_data[0]);
+    memcpy(&data,&tuple->value->uint8,tuple->length);
+    setStationData(0, data);
+    update_station_layer(data);
   }
-  station_data[0].valid = tuple != 0;
 
   tuple = dict_find(iter, KEY_STATION_2_DATA);
   if(tuple){
-    memcpy(&station_data[1],&tuple->value->uint8,tuple->length);
-    printData(station_data[1]);
+    memcpy(&data,&tuple->value->uint8,tuple->length);
+    setStationData(1, data);
   }
-  station_data[1].valid = tuple != 0;
 
   tuple = dict_find(iter, KEY_STATION_3_DATA);
   if(tuple){
-    memcpy(&station_data[2],&tuple->value->uint8,tuple->length);
-    printData(station_data[2]);
+    memcpy(&data,&tuple->value->uint8,tuple->length);
+    setStationData(2, data);
   }
-  station_data[2].valid = tuple != 0;
+
+  tuple = dict_find(iter, KEY_STATION_4_DATA);
+  if(tuple){
+    memcpy(&data,&tuple->value->uint8,tuple->length);
+    setStationData(3, data);
+  }
+  
 }
 
 int main(void) {
-  app_message_register_inbox_received(cb_in_received_handler);
-  app_message_open(app_message_inbox_size_maximum(), 0);
 
   show_main_window();
+
+  app_message_register_inbox_received(cb_in_received_handler);
+  app_message_open(app_message_inbox_size_maximum(), 0);
 
   app_event_loop();
 

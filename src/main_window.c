@@ -10,6 +10,8 @@ static PropertyAnimation *prop_animation;
 
 static bool toggle = false;
 
+static int current_station = 0;
+
 static void animation_started(Animation *animation, void *data) {
 }
 
@@ -62,9 +64,15 @@ static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
   animate(false);
 }
 
+static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
+  current_station = (current_station + 1) % getNumberOfStations();
+  update_station_layer(getStationData(current_station));
+}
+
 void click_config_provider(void *context) {
   window_single_click_subscribe(BUTTON_ID_UP, up_click_handler);
   window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler);
+  window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
 }
 
 static void initialise_ui(void) {

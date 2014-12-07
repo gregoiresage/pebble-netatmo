@@ -35,7 +35,7 @@ static void initialise_ui(void) {
   layer_add_child(s_background, (Layer *)s_temp_min_max);
       
   // s_humidity
-  s_humidity = text_layer_create(GRect(0, 68, 72, 27));
+  s_humidity = text_layer_create(GRect(0, 68, 40, 27));
   text_layer_set_background_color(s_humidity, GColorClear);
   text_layer_set_text_color(s_humidity, GColorBlack);
   text_layer_set_text(s_humidity, "--%");
@@ -44,7 +44,7 @@ static void initialise_ui(void) {
   layer_add_child(s_background, (Layer *)s_humidity);
 
   // s_name
-  s_name = text_layer_create(GRect(72, 68, 72, 27));
+  s_name = text_layer_create(GRect(40, 68, 104, 27));
   text_layer_set_background_color(s_name, GColorClear);
   text_layer_set_text_color(s_name, GColorBlack);
   text_layer_set_text(s_name, "----");
@@ -86,4 +86,6 @@ void update_station_layer(DashboardData data) {
   text_layer_set_text(s_temp_min_max,text_temp_min_max);
   text_layer_set_text(s_humidity,text_humidity);
   text_layer_set_text(s_name,text_name);
+
+  layer_mark_dirty(s_background);
 }

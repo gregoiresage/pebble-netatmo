@@ -120,4 +120,6 @@ void update_main_layer(DashboardData data) {
   text_layer_set_text(s_humidity,text_humidity);
   text_layer_set_text(s_noise,text_noise);
   text_layer_set_text(s_pressure,text_pressure);
+
+  layer_mark_dirty(s_background);
 }

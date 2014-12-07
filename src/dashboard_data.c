@@ -1,8 +1,34 @@
 #include <pebble.h>
 #include "dashboard_data.h"
 
+static DashboardData module_data;
+static DashboardData station_data[4];
+static int numberOfStations = 0;
+
+DashboardData getModuleData(){
+	return module_data;
+}
+void setModuleData(DashboardData data){
+	memcpy(&module_data, &data, sizeof(DashboardData));
+}
+
+DashboardData getStationData(int index){
+	return station_data[index];
+}
+void setStationData(int index, DashboardData data){
+	memcpy(&station_data[index], &data, sizeof(DashboardData));
+	if(index + 1 > numberOfStations){
+		numberOfStations = index + 1;
+	}
+}
+
+int getNumberOfStations(){
+	return numberOfStations;
+}
+
 void printData(DashboardData data){
-	APP_LOG(APP_LOG_LEVEL_INFO, "%s %d.%d %d.%d %d.%d %d %d %d %d.%d",
+	APP_LOG(APP_LOG_LEVEL_INFO, "%d %s %d.%d %d.%d %d.%d %d %d %d %d.%d",
+		data.type,
 		data.name,
 		data.temperature/10,data.temperature%10,
 		data.temperature_min/10,data.temperature_min%10,
