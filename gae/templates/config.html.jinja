@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+{% autoescape true %}
+<html>
+	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="initial-scale=1.0, user-scalable=no"/>
+		<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.3/jquery.mobile-1.4.3.min.css" />
+		<script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+		<script src="http://code.jquery.com/mobile/1.4.3/jquery.mobile-1.4.3.min.js"></script>
+		<title>Pebble NetAtmo</title>
+	</head>
+  	<body>
+		<div data-role="page" id="page1">
+			<div data-role="header" id="header">
+				<button id="b-cancel" data-icon="back" data-iconpos="left" data-inline="true" data-mini="true">Cancel</button>
+				<h1>Pebble NetAtmo</h1>
+			</div>
+			<div data-role="content">
+    			{% if refresh_token is defined %}
+    				<fieldset id="devices" data-role="controlgroup">
+    			    <legend>Choose the main device :</legend>
+    				{% for device in devices %}
+    					<input type="radio" name="{{ device._id }}" id="{{ device._id }}" value="{{ device._id }}" checked="checked"/>
+    					<label for="{{ device._id }}">{{ device.station_name }}</lable>
+    				{% endfor %}
+    				</fieldset>
+    				<button id="b-submit" data-theme="b" data-icon="check" data-iconpos="right">Save</button>
+				{% else %}
+					{% if error is defined %}
+					<p>An error ocured : {{ error }}</p>
+					{% endif %}
+					<button data-theme="b" id="b-authorize">Authorize</button>
+				{% endif %}
+			</div>
+		</div>
+		<script>
+			$().ready(function() {
+				$("#b-cancel").click(function() {
+					window.location = "pebblejs://close#";
+				});
+
+				$("#b-submit").click(function() {
+					var data = {
+					{% if refresh_token is defined %}
+					'refresh_token' : '{{ refresh_token }}',
+					{% endif %}
+					{% if access_token is defined %}
+					'access_token' : '{{ access_token }}',
+					{% endif %}
+					{% if expires_in is defined %}
+					'expires_in' : {{ expires_in }},
+					{% endif %}
+					'main_device' : $("#devices :radio:checked").val()
+					};
+					var location = "pebblejs://close#" + encodeURIComponent(JSON.stringify(data));
+					window.location = location;
+				});
+
+				$("#b-authorize").click(function() {
+					window.location = "auth";
+				});
+			});
+		</script>
+  </body>
+</html>
+{% endautoescape %}

@@ -7,10 +7,11 @@ threadsafe: true
 handlers:
 - url: /auth.*
   script: gae.auth.application
-
-- url: /
-  static_dir: gae/static
+- url: /config.*
+  script: gae.auth.application
 
 libraries:
 - name: webapp2
+  version: latest
+- name: jinja2
   version: latest
