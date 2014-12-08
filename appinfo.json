@@ -3,8 +3,8 @@
   "shortName": "NetAtmo",
   "longName": "NetAtmo",
   "companyName": "Gregoire Sage",
-  "versionCode": 3,
-  "versionLabel": "0.3",
+  "versionCode": 4,
+  "versionLabel": "0.4",
   "watchapp": {
     "watchface": false
   },
