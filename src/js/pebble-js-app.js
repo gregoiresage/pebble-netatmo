@@ -37,12 +37,24 @@ function read(){
   console.log("read " + access_token + " "+ expires_in + " "+ refresh_token + " " + main_device);
 }
 
+function senderror(error){
+  console.log("error : " + error);
+
+  var data = { 'error' : error };
+  Pebble.sendAppMessage(data, 
+  function(e) {
+    console.log('error sent');
+  },
+  function(e) {
+    console.log('error NOT sent');
+  });
+}
+
 function disconnect() {
   console.log("Disconnection");
   access_token = undefined;
   expires_in = 0; 
   refresh_token = undefined; 
-  main_device = undefined;
   store();
 }
 
@@ -68,8 +80,9 @@ Pebble.addEventListener('webviewclosed', function(e) {
   if (s) {
     var c = JSON.parse(s);
     if(c.access_token) {
-      console.log(c.access_token);
+      main_device = c.main_device;
       updateToken(c);
+      store();
       fetchData();
     }
     else {
@@ -79,11 +92,16 @@ Pebble.addEventListener('webviewclosed', function(e) {
 });
 
 function fetchData(){
-  console.log("fetchData");
-  if (!access_token)
-    return console.log("Not signed in");
+  console.log("fetchData " + access_token);
+  if (!access_token){
+    senderror("Please sign in");
+    return;
+  }
+
+  console.log("fetchData accesstoken is OK");
 
   var n = new Date;
+  console.log("fetchData " + (expires_in < n.valueOf()) + " " + expires_in + " " + n.valueOf());
   if (expires_in < n.valueOf()) 
     return renewToken(function() { fetchData() });
 
@@ -155,8 +173,20 @@ function fetchData(){
       });
   },
   function(e) {
-    console.log("Error status");
-    disconnect();
+    if(e.responseText){
+      var response = JSON.parse(e.responseText);
+      if(response.error && response.error.code == 2){
+        // Invalid access token
+        disconnect();
+        senderror("Please sign in");
+      }
+    }
+    else if(e.status == 500){
+      // Invalid deviceID ???
+      senderror("Please sign in");
+    }
+
+    console.log("fetchData Error")
   });
 }
 
@@ -196,26 +226,47 @@ function renewToken(callback) {
   sendRequest(url, "GET", function(e) {
     var res = JSON.parse(e);
     updateToken(res);
+    store();
     if(callback)
       callback();
+  },
+  function(e) {
+    if(e.responseText){
+      var response = JSON.parse(e.responseText);
+      console.log("renewToken error response " + e.responseText)
+      if(response.error && response.error.code == 2){
+        // Invalid access token
+        disconnect();
+        senderror("Please sign in");
+      }
+    }
+
+    console.log("renewToken Error");
+    
   });
 }
 
 function updateToken(e) {
-  console.log("updateToken");
+  console.log("updateToken " + e.access_token + " " + e.refresh_token + " " + e.expires_in);
   access_token = e.access_token;
   refresh_token = e.refresh_token;
   var t = new Date;
-  expires_in = t.valueOf() + e.expires_in * 1000;
-  main_device = e.main_device;
-  store();
+  expires_in = t.valueOf() + e.expires_in * 1000 / 2;
 }
+
+// Timeout for (any) http requests, in milliseconds
+var g_xhr_timeout = 6000;
 
 function sendRequest(url, type, success, error, data) {
   data = data || null;
   var req = new XMLHttpRequest;
   req.open(type, url, !0);
+  var xhrTimeout = setTimeout(function() {
+    req.abort();
+    senderror("Connection timeout");
+  }, g_xhr_timeout);
   req.onload = function() {
+    clearTimeout(xhrTimeout); // got response, no more need in timeout
     4 == req.readyState && (200 == req.status ? success(req.responseText) : error && error(req))
   };
   if(data){

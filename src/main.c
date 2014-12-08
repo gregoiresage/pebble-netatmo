@@ -10,6 +10,8 @@
 #define KEY_STATION_3_DATA  3
 #define KEY_STATION_4_DATA  4
 
+#define KEY_ERROR           1000
+
 static void cb_in_received_handler(DictionaryIterator *iter, void *context) {
 
   DashboardData data;
@@ -45,7 +47,16 @@ static void cb_in_received_handler(DictionaryIterator *iter, void *context) {
     memcpy(&data,&tuple->value->uint8,tuple->length);
     setStationData(3, data);
   }
-  
+
+  tuple = dict_find(iter, KEY_ERROR);
+  if(tuple){
+    APP_LOG(APP_LOG_LEVEL_INFO, "Error %s", tuple->value->cstring);
+    setError(tuple->value->cstring);
+  }
+  else {
+    setError(0);
+  }
+
 }
 
 int main(void) {
