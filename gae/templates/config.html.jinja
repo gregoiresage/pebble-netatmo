@@ -20,8 +20,8 @@
     				<fieldset id="devices" data-role="controlgroup">
     			    <legend>Choose the main device :</legend>
     				{% for device in devices %}
-    					<input type="radio" name="{{ device._id }}" id="{{ device._id }}" value="{{ device._id }}" checked="checked"/>
-    					<label for="{{ device._id }}">{{ device.station_name }}</lable>
+    					<input type="radio" name="station-choice" id="{{ device._id }}" value="{{ device._id }}" checked="checked"/>
+    					<label for="{{ device._id }}">{{ device.station_name }}</label>
     				{% endfor %}
     				</fieldset>
     				<button id="b-submit" data-theme="b" data-icon="check" data-iconpos="right">Save</button>
