@@ -16,9 +16,17 @@
     "station_data_0": 1,
     "station_data_1": 2,
     "station_data_2": 3,
-    "station_data_3": 4
+    "station_data_3": 4,
+
+    "error" : 1000
   },
   "resources": {
-    "media": []
+    "media": [
+      {
+        "type": "png",
+        "name": "IMAGE_ERROR",
+        "file": "images/high-importance-64.png"
+      }
+    ]
   }
 }
