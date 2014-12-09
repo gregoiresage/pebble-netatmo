@@ -1,6 +1,7 @@
 #include "main_layer.h"
 #include <pebble.h>
 #include "dashboard_data.h"
+#include "utils.h"
 
 static GFont s_res_bitham_42_light;
 static GFont s_res_gothic_18_bold;
@@ -86,8 +87,8 @@ void destroy_station_layer(void) {
 }
 
 void update_station_layer(DashboardData data) {
-  snprintf(text_temp, sizeof(text_temp), "%d.%d°", data.temperature/10, data.temperature%10);
-  snprintf(text_temp_min_max, sizeof(text_temp_min_max), "%d.%d° / %d.%d°", data.temperature_min/10, data.temperature_min%10, data.temperature_max/10, data.temperature_max%10);
+  snprintf(text_temp, sizeof(text_temp), "%d.%d°", data.temperature/10, abs(data.temperature)%10);
+  snprintf(text_temp_min_max, sizeof(text_temp_min_max), "%d.%d° / %d.%d°", data.temperature_min/10, abs(data.temperature_min)%10, data.temperature_max/10, abs(data.temperature_max)%10);
   snprintf(text_humidity, sizeof(text_humidity), "%d%%", data.humidity);
   snprintf(text_name, sizeof(text_name), "%s", data.name);
 
