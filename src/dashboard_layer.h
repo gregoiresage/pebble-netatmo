@@ -7,7 +7,6 @@
 typedef struct {
 	GFont s_res_bitham_42_light;
 	GFont s_res_gothic_18_bold;
-	GFont s_res_gothic_28_bold;
 
 	GColor bgColor;
 	GColor fgColor;

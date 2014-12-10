@@ -9,10 +9,10 @@ static void cb_background_draw(Layer *layer, GContext *g_ctx) {
 	GRect layer_bounds = layer_get_bounds(layer);
 
 	graphics_context_set_fill_color(g_ctx,dashboard_layer->bgColor);
-	layer_bounds.origin.x += 2;
-	layer_bounds.origin.y += 2;
-	layer_bounds.size.w -= 4;
-	layer_bounds.size.h -= 2;
+	layer_bounds.origin.x += 1;
+	layer_bounds.origin.y += 1;
+	layer_bounds.size.w -= 2;
+	layer_bounds.size.h -= 1;
 	graphics_fill_rect(g_ctx,layer_bounds,6,GCornersTop);
 }
 
@@ -23,7 +23,6 @@ DashboardLayer* dashboard_layer_create(GRect frame, GColor bgColor){
 	dashboard_layer->fgColor = bgColor == GColorBlack ? GColorWhite : GColorBlack;
 
 	dashboard_layer->s_res_bitham_42_light 	= fonts_get_system_font(FONT_KEY_BITHAM_42_LIGHT);
-	dashboard_layer->s_res_gothic_28_bold 	= fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD);
 	dashboard_layer->s_res_gothic_18_bold 	= fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
 
 	snprintf(dashboard_layer->text_name, sizeof(dashboard_layer->text_name), "---");
@@ -143,21 +142,18 @@ void dashboard_layer_update_data(DashboardLayer *dashboard_layer, DashboardData 
 	snprintf(dashboard_layer->text_name, sizeof(dashboard_layer->text_name), "%s", dashboard_data.name);
 
 	if(dashboard_data.type == NAMain || dashboard_data.type == NAModule4){
-		text_layer_set_font(dashboard_layer->s_main, dashboard_layer->s_res_bitham_42_light);
 		snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), "%d.%d°", dashboard_data.temperature/10, abs(dashboard_data.temperature)%10);
 		snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "%d%%  %dppm", dashboard_data.humidity, dashboard_data.co2);
 		dashboard_layer->dashboard_data.displayed_measure = Temperature;
 	}
 	else if(dashboard_data.type == NAModule1){
-		text_layer_set_font(dashboard_layer->s_main, dashboard_layer->s_res_bitham_42_light);
 		snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), "%d.%d°", dashboard_data.temperature/10, abs(dashboard_data.temperature)%10);
 		snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "%d%% %d.%dmb", dashboard_data.humidity, dashboard_data.pressure/10, dashboard_data.pressure%10);
 		dashboard_layer->dashboard_data.displayed_measure = Temperature;
 	}
 	else if(dashboard_data.type == NAModule3){
-		text_layer_set_font(dashboard_layer->s_main, dashboard_layer->s_res_gothic_28_bold);
-		snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), "%d.%03dmm", dashboard_data.rain/1000, dashboard_data.rain%1000);
-		snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), " ");
+		snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), "%d.%03d", dashboard_data.rain/1000, dashboard_data.rain%1000);
+		snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "mm");
 		dashboard_layer->dashboard_data.displayed_measure = Rain;
 	}
 	else {
