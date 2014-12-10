@@ -8,6 +8,8 @@ var
   units_metric;
 
 function store(){
+  console.log("store " + units_metric);
+
   if(access_token)
     localStorage.setItem("access_token", access_token);
   else 
@@ -36,7 +38,9 @@ function read(){
   expires_in    = localStorage.getItem("expires_in");
   refresh_token = localStorage.getItem("refresh_token");
   main_device   = localStorage.getItem("main_device");
-  units_metric  = localStorage.getItem("units_metric") == null ? 1 : 0;
+  units_metric  = localStorage.getItem("units_metric");
+  if(units_metric == null)
+    units_metric = 1;
 
   console.log("read " + access_token + " "+ expires_in + " "+ refresh_token + " " + main_device + " " + units_metric);
 }
