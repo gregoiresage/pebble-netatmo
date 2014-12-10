@@ -4,7 +4,8 @@ var
   access_token, 
   expires_in, 
   refresh_token,
-  main_device;
+  main_device,
+  units_metric;
 
 function store(){
   if(access_token)
@@ -26,6 +27,8 @@ function store(){
     localStorage.setItem("main_device", main_device);
   else 
     localStorage.removeItem("main_device");
+
+  localStorage.setItem("units_metric", units_metric);
 }
 
 function read(){
@@ -33,8 +36,9 @@ function read(){
   expires_in    = localStorage.getItem("expires_in");
   refresh_token = localStorage.getItem("refresh_token");
   main_device   = localStorage.getItem("main_device");
+  units_metric  = localStorage.getItem("units_metric") == null ? 1 : 0;
 
-  console.log("read " + access_token + " "+ expires_in + " "+ refresh_token + " " + main_device);
+  console.log("read " + access_token + " "+ expires_in + " "+ refresh_token + " " + main_device + " " + units_metric);
 }
 
 function senderror(error){
@@ -81,6 +85,7 @@ Pebble.addEventListener('webviewclosed', function(e) {
     var c = JSON.parse(s);
     if(c.access_token) {
       main_device = c.main_device;
+      units_metric = c.units;
       updateToken(c);
       store();
       fetchData();
@@ -233,9 +238,9 @@ function fillDashBoardData(arr, type, name, temp, temp_min, temp_max, humidity, 
   for(; i<20; i++)
     pushUInt8(arr, 0);
 
-  pushUInt16(arr, temp*10);
-  pushUInt16(arr, temp_min*10);
-  pushUInt16(arr, temp_max*10);
+  pushUInt16(arr, (units_metric == 0 ? 32 + 1.8 * temp : temp) * 10);
+  pushUInt16(arr, (units_metric == 0 ? 32 + 1.8 * temp_min : temp_min) * 10);
+  pushUInt16(arr, (units_metric == 0 ? 32 + 1.8 * temp_max : temp_max) * 10);
   pushUInt8(arr,  humidity);         
   pushUInt8(arr,  noise);
   pushUInt16(arr, co2);
@@ -244,7 +249,9 @@ function fillDashBoardData(arr, type, name, temp, temp_min, temp_max, humidity, 
 
   // Temperature
   for(i=0; i<24; i++){
-    pushUInt16(arr, measures[i][0] != null ? measures[i][0] * 10 : 0);
+    var tmp = measures[i][0] != null ? measures[i][0] : 0;
+    tmp = units_metric == 0 ? 32 + 1.8 * tmp : tmp;
+    pushUInt16(arr, tmp * 10);
   }
   // CO2
   for(i=0; i<24; i++){

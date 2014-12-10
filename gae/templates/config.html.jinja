@@ -34,6 +34,10 @@
     					<label for="{{ device._id }}">{{ device.station_name }}</label>
     				{% endfor %}
     				</fieldset>
+    				<div class="ui-field-contain">
+						<label for="units">Units</label>
+						<input type="checkbox" data-role="flipswitch" name="units" id="units" data-on-text="°C" data-off-text="°F" checked="checked"/>
+					</div>
     				<button id="b-submit" data-theme="b" data-icon="check" data-iconpos="right">Save</button>
 				{% else %}
 					{% if error is defined %}
@@ -60,7 +64,8 @@
 					{% if expires_in is defined %}
 					'expires_in' : {{ expires_in }},
 					{% endif %}
-					'main_device' : $("#devices :radio:checked").val()
+					'main_device' : $("#devices :radio:checked").val(),
+					'units' 	  : ($('#units').prop('checked') ? 1 : 0)
 					};
 					var location = "pebblejs://close#" + encodeURIComponent(JSON.stringify(data));
 					window.location = location;
