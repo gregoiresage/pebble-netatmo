@@ -1,21 +1,21 @@
-#include "main_window.h"
-#include "main_layer.h"
-#include "station_layer.h"
 #include <pebble.h>
 
-static Window *s_window;
-static Layer  *s_main_layer;
-static Layer  *s_station_layer;
-static Layer  *s_error_layer;
+#include "dashboard_layer.h"
 
+static Window *s_window;
+
+static DashboardLayer  *s_top_layer;
+static DashboardLayer  *s_bottom_layer;
+
+static Layer  *s_error_layer;
 static GFont  error_font;
 
 static PropertyAnimation *prop_animation;
 
-#define FULL_MODULE   0
-#define FULL_STATION  1
-#define HALF_HALF     2
-static int layout = HALF_HALF;
+#define TOP     0
+#define BOTTOM  1
+#define MIDDLE  2
+static int layout = MIDDLE;
 
 static int current_station = 0;
 
@@ -42,28 +42,31 @@ static void destroy_property_animation(PropertyAnimation **prop_animation) {
 }
 
 static void animate(bool toUp){
-  if(layout == FULL_STATION && toUp)
+  if(layout == TOP && toUp)
     return;
 
-  if(layout == FULL_MODULE && !toUp)
+  if(layout == BOTTOM && !toUp)
     return;
 
   GRect to_rect;
-  if (layout == HALF_HALF && toUp) {
+  if (layout == MIDDLE && toUp) {
     to_rect = GRect(0, 0, 144, 168);
-    layout = FULL_STATION;
-  } else if (layout == HALF_HALF && !toUp) {
-    to_rect = GRect(0, 168 - 15, 144, 168);
-    layout = FULL_MODULE;
+    layout = TOP;
+  } else if (layout == MIDDLE && !toUp) {
+    to_rect = GRect(0, 168 - 2, 144, 168);
+    layout = BOTTOM;
   }
   else {
-    to_rect = GRect(0, 168 / 2  + 10, 144, 168);
-    layout = HALF_HALF;
+    to_rect = GRect(0, 168 / 2, 144, 168);
+    layout = MIDDLE;
   }
+
+  dashboard_layer_set_graph_hidden(s_top_layer, layout != BOTTOM);
+  dashboard_layer_set_graph_hidden(s_bottom_layer, layout != TOP);
 
   destroy_property_animation(&prop_animation);
 
-  prop_animation = property_animation_create_layer_frame(s_station_layer, NULL, &to_rect);
+  prop_animation = property_animation_create_layer_frame(dashboard_layer_get_layer(s_bottom_layer), NULL, &to_rect);
   animation_set_duration((Animation*) prop_animation, 400);
   animation_set_curve((Animation*) prop_animation, AnimationCurveEaseInOut);
 
@@ -76,16 +79,24 @@ static void animate(bool toUp){
 
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
   animate(true);
+  // dashboard_layer_update_data(s_bottom_layer, dashboard_data_get(current_station));
 }
 
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
   animate(false);
+  // dashboard_layer_update_data(s_top_layer, dashboard_data_get(0));
 }
 
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
-  if(layout == HALF_HALF){
-    current_station = (current_station + 1) % getNumberOfStations();
-    update_station_layer(getStationData(current_station));
+  if(layout == MIDDLE){
+    current_station = (current_station + 1) % (dashboard_data_count());
+    dashboard_layer_update_data(s_bottom_layer, dashboard_data_get(current_station));
+  }
+  else if(layout == TOP){
+    dashboard_layer_switch_graph(s_bottom_layer);
+  }
+  else if(layout == BOTTOM){
+    dashboard_layer_switch_graph(s_top_layer);
   }
 }
 
@@ -99,10 +110,9 @@ void setError(char* error){
   if(error){
     snprintf(text_error, sizeof(text_error), "%s", error);
   }
-
-  layer_set_hidden(s_error_layer,   error == NULL);
-  layer_set_hidden(s_station_layer, error != NULL);
-  layer_set_hidden(s_main_layer,    error != NULL);
+  layer_set_hidden(s_error_layer,                             error == NULL);
+  layer_set_hidden(dashboard_layer_get_layer(s_top_layer), error != NULL);
+  layer_set_hidden(dashboard_layer_get_layer(s_bottom_layer), error != NULL);
 }
 
 static void cb_erro_draw(Layer *layer, GContext *g_ctx) {
@@ -123,15 +133,16 @@ static void initialise_ui(void) {
 
   s_window = window_create();
   window_set_fullscreen(s_window, true);
-  // window_set_background_color(s_window, GColorBlack);
   window_set_click_config_provider(s_window, click_config_provider);
 
-  s_main_layer = create_main_layer();
-  layer_add_child(window_get_root_layer(s_window), s_main_layer);
+  s_top_layer = dashboard_layer_create(GRect(0, 0, 144, 168), GColorWhite);
+  dashboard_layer_set_graph_hidden(s_top_layer, true);
+  layer_add_child(window_get_root_layer(s_window), dashboard_layer_get_layer(s_top_layer));
 
-  s_station_layer = create_station_layer();
-  layer_set_frame(s_station_layer, GRect(0, 168 / 2 + 10, 144, 168));
-  layer_add_child(window_get_root_layer(s_window), s_station_layer);
+  s_bottom_layer = dashboard_layer_create(GRect(0, 0, 144, 168), GColorBlack);
+  dashboard_layer_set_graph_hidden(s_bottom_layer, true);
+  layer_set_frame(dashboard_layer_get_layer(s_bottom_layer), GRect(0, 168 / 2, 144, 168));
+  layer_add_child(window_get_root_layer(s_window), dashboard_layer_get_layer(s_bottom_layer));
 
   s_error_layer = layer_create(GRect(0, 0, 144, 168));
   layer_add_child(window_get_root_layer(s_window), s_error_layer);
@@ -140,11 +151,11 @@ static void initialise_ui(void) {
 }
 
 static void destroy_ui(void) {
-  destroy_main_layer();
-  destroy_station_layer();
+  dashboard_layer_destroy(s_top_layer);
+  dashboard_layer_destroy(s_bottom_layer);
   layer_destroy(s_error_layer);
-  window_destroy(s_window);
   gbitmap_destroy(image_error);
+  window_destroy(s_window);
 }
 
 static void handle_window_unload(Window* window) {
@@ -161,4 +172,9 @@ void show_main_window(void) {
 
 void hide_main_window(void) {
   window_stack_remove(s_window, true);
+}
+
+void refresh_window(void){
+  dashboard_layer_update_data(s_top_layer,    dashboard_data_get_outdoor());
+  dashboard_layer_update_data(s_bottom_layer, dashboard_data_get(0));
 }

@@ -1,51 +1,28 @@
 #include <pebble.h>
 #include "dashboard_data.h"
 #include "main_window.h"
-#include "main_layer.h"
-#include "station_layer.h"
 
-#define KEY_MODULE_DATA     0
-#define KEY_STATION_1_DATA  1
-#define KEY_STATION_2_DATA  2
-#define KEY_STATION_3_DATA  3
-#define KEY_STATION_4_DATA  4
-
+#define KEY_DASHBOARD_DATA  0
+#define KEY_RESET_DATA      1
 #define KEY_ERROR           1000
 
 static void cb_in_received_handler(DictionaryIterator *iter, void *context) {
-
   DashboardData data;
 
-  Tuple *tuple = dict_find(iter, KEY_MODULE_DATA);
+  Tuple *tuple = dict_find(iter, KEY_RESET_DATA);
   if(tuple){
-    memcpy(&data,&tuple->value->uint8,tuple->length);
-    setModuleData(data);
-    update_main_layer(data);
+    dashboard_data_reset();
   }
 
-  tuple = dict_find(iter, KEY_STATION_1_DATA);
+  tuple = dict_find(iter, KEY_DASHBOARD_DATA);
   if(tuple){
     memcpy(&data,&tuple->value->uint8,tuple->length);
-    setStationData(0, data);
-    update_station_layer(data);
-  }
-
-  tuple = dict_find(iter, KEY_STATION_2_DATA);
-  if(tuple){
-    memcpy(&data,&tuple->value->uint8,tuple->length);
-    setStationData(1, data);
-  }
-
-  tuple = dict_find(iter, KEY_STATION_3_DATA);
-  if(tuple){
-    memcpy(&data,&tuple->value->uint8,tuple->length);
-    setStationData(2, data);
-  }
-
-  tuple = dict_find(iter, KEY_STATION_4_DATA);
-  if(tuple){
-    memcpy(&data,&tuple->value->uint8,tuple->length);
-    setStationData(3, data);
+    if(data.type == NAModule1){
+      dashboard_data_set_outdoor(data);
+    }
+    else {
+      dashboard_data_add(data);
+    } 
   }
 
   tuple = dict_find(iter, KEY_ERROR);
@@ -57,6 +34,7 @@ static void cb_in_received_handler(DictionaryIterator *iter, void *context) {
     setError(0);
   }
 
+  refresh_window();
 }
 
 int main(void) {

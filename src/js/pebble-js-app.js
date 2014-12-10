@@ -41,7 +41,7 @@ function senderror(error){
   console.log("error : " + error);
 
   var data = { 'error' : error };
-  Pebble.sendAppMessage(data, 
+  MessageQueue.sendAppMessage(data, 
   function(e) {
     console.log('error sent');
   },
@@ -91,14 +91,83 @@ Pebble.addEventListener('webviewclosed', function(e) {
   }
 });
 
+function fetchMeasures(device, modules, index){
+  console.log("fetchMeasures " + device._id);
+  if(modules)
+    console.log("fetchMeasures module " + modules[index]._id );
+
+  if (!access_token){
+    senderror("Please sign in");
+    return;
+  }
+
+  var n = new Date;
+  if (expires_in < n.valueOf()) 
+    return renewToken(function() { fetchMeasures(module, station) });
+
+  var UTCseconds = (n.getTime() + n.getTimezoneOffset()*60*1000)/1000 - 24 * 3600;
+
+  var req = new XMLHttpRequest();
+  var url = 'https://api.netatmo.net/api/getmeasure?access_token=' + encodeURIComponent(access_token) + '&device_id=' + encodeURIComponent(device._id) + '&type=Temperature,CO2,Humidity,Pressure,Noise,sum_rain&scale=1hour&limit=24&optimize=true&date_begin=' + UTCseconds;
+  if(modules)
+    url += '&module_id=' + encodeURIComponent(modules[index]._id);
+  console.log(url);
+  sendRequest(url, "GET", 
+  function(e) {
+    // console.log("fetchMeasures " + e);
+
+    var result = JSON.parse(e);
+
+    var dashboard_data = modules ? modules[index].dashboard_data : device.dashboard_data;
+
+    var array = [];
+    fillDashBoardData(
+        array,
+        modules ? moduleType(modules[index].type) : moduleType(device.type),
+        removeDiacritics(modules ? modules[index].module_name : device.module_name),
+        'Temperature' in dashboard_data ? dashboard_data.Temperature : 0,
+        'min_temp'    in dashboard_data ? dashboard_data.min_temp    : 0,
+        'max_temp'    in dashboard_data ? dashboard_data.max_temp    : 0,
+        'Humidity'    in dashboard_data ? dashboard_data.Humidity    : 0,
+        'Noise'       in dashboard_data ? dashboard_data.Noise       : 0,
+        'CO2'         in dashboard_data ? dashboard_data.CO2         : 0,
+        'Pressure'    in dashboard_data ? dashboard_data.Pressure    : 0,
+        'Rain'        in dashboard_data ? dashboard_data.Rain        : 0,
+        result.body[0].value);
+
+    MessageQueue.sendAppMessage({'dashboard_data' : array }, 
+      function(e) {
+        console.log('data sent');
+      },
+      function(e) {
+        console.log('data NOT sent');
+      });
+
+  },
+  function(e) {
+    if(e.responseText){
+      console.log("fetchMeasures Error " + e.responseText)
+      var response = JSON.parse(e.responseText);
+      if(response.error && response.error.code == 2){
+        // Invalid access token
+        // disconnect();
+        // senderror("Please sign in");
+      }
+    }
+    else if(e.status == 500){
+      // Invalid deviceID ???
+      // senderror("Please sign in");
+    }
+    console.log("fetchMeasures Error")
+  });
+}
+
 function fetchData(){
   console.log("fetchData " + access_token);
   if (!access_token){
     senderror("Please sign in");
     return;
   }
-
-  console.log("fetchData accesstoken is OK");
 
   var n = new Date;
   console.log("fetchData " + (expires_in < n.valueOf()) + " " + expires_in + " " + n.valueOf());
@@ -110,67 +179,21 @@ function fetchData(){
   console.log(url);
   sendRequest(url, "GET", 
   function(e) {
-    var json = JSON.parse(e);
-
-    // json = {"status": "ok", "body": {"modules": [{"rf_status": 64, "data_type": ["Temperature", "Humidity"], "last_message": 1417989452, "firmware": 38, "main_device": "70:ee:50:00:2a:ce", "dashboard_data": {"date_min_temp": 1417931096, "Temperature": 5.7000000000000002, "time_utc": 1417989433, "Humidity": 81, "min_temp": 3.7000000000000002, "date_max_temp": 1417975232, "max_temp": 7.7000000000000002}, "module_name": "Ext\u00e9rieur", "battery_vp": 5868, "_id": "02:00:00:00:21:52", "type": "NAModule1", "last_seen": 1417989433}, {"rf_status": 58, "data_type": ["Temperature", "Co2", "Humidity"], "last_message": 1417989452, "firmware": 38, "main_device": "70:ee:50:00:2a:ce", "dashboard_data": {"CO2": 360, "Temperature": 16.899999999999999, "time_utc": 1417989433, "Humidity": 46, "date_min_temp": 1417988202, "min_temp": 16.899999999999999, "date_max_temp": 1417906900, "max_temp": 18.300000000000001}, "module_name": "Chambre", "battery_vp": 5354, "_id": "03:00:00:00:c5:38", "type": "NAModule4", "last_seen": 1417989433}, {"rf_status": 83, "data_type": ["Temperature", "Co2", "Humidity"], "last_message": 1417989452, "firmware": 38, "main_device": "70:ee:50:00:2a:ce", "dashboard_data": {"CO2": 700, "Temperature": 19.100000000000001, "time_utc": 1417989433, "Humidity": 44, "date_min_temp": 1417957702, "min_temp": 18.699999999999999, "date_max_temp": 1417936222, "max_temp": 21.5}, "module_name": "Chambre BB", "battery_vp": 4499, "_id": "03:00:00:00:d6:ca", "type": "NAModule4", "last_seen": 1417989433}], "devices": [{"meteo_alarms": [{"status": "new", "origin": "meteoalarm", "begin": 1413864000, "end": 1413950400, "title": "__MA_ALARM_COASTAL_EVENT_TITLE", "time_generated": 1413864741, "area": "Nord", "alarm_id": 113892, "text_field": "__MA_ALARM_COASTAL_EVENT_LEVEL_1", "_id": {"$id": "5445dd251c775952438b4569"}, "type": "ALARM_COASTAL_EVENT", "level": 1}], "type": "NAMain", "data_type": ["Temperature", "Co2", "Humidity", "Noise", "Pressure"], "service": {"meteo_alarm": true}, "last_upgrade": 1353334645, "firmware": 87, "date_setup": {"usec": 0, "sec": 1359763200}, "modules": ["02:00:00:00:21:52", "03:00:00:00:c5:38", "03:00:00:00:d6:ca"], "co2_calibrating": false, "last_status_store": 1417989457, "wifi_status": 53, "place": {"city": "La Madeleine", "geoip_city": "La Madeleine", "country": "FR", "altitude": 36, "location": [3.0902400000000001, 50.653300000000002], "timezone": "Europe/Paris"}, "dashboard_data": {"Noise": 43, "Temperature": 20.5, "time_utc": 1417989442, "Humidity": 48, "Pressure": 1021.3, "CO2": 659, "AbsolutePressure": 1017, "min_temp": 17.899999999999999, "date_max_temp": 1417982496, "date_min_temp": 1417935651, "max_temp": 20.600000000000001}, "cipher_id": "enc:16:Wvl7z9xvWqV2RtIVd+mvK0O4JWlnhYK7f4YFuJBHUuFo9ia0CYvFyA8Jd7oZBVw8", "module_name": "Salon", "access_code": "SNLPJ75g9T", "battery_vp": 0, "_id": "70:ee:50:00:2a:ce", "alarm_config": {"default_alarm": [{"db_alarm_number": 0}, {"db_alarm_number": 1}, {"db_alarm_number": 2}, {"db_alarm_number": 6}, {"desactivated": true, "db_alarm_number": 4}, {"db_alarm_number": 5}, {"db_alarm_number": 7}], "personnalized": []}, "station_name": "Lille"}]}, "time_exec": 0.0070807933807373004, "time_server": 1417989797};
-    console.log("Name : " +                       json.body.devices[0].module_name);
-    console.log("Inside Temperature : " +         json.body.devices[0].dashboard_data.Temperature);
-    console.log("Inside Temperature Min/Max: " +  json.body.devices[0].dashboard_data.min_temp + "/" + json.body.devices[0].dashboard_data.max_temp);
-    console.log("Inside Humidity : " +            json.body.devices[0].dashboard_data.Humidity);
-    console.log("Inside Pressure : " +            json.body.devices[0].dashboard_data.Pressure);
-    console.log("Inside CO2 : " +                 json.body.devices[0].dashboard_data.CO2);
-
-    console.log("Name : " +                       json.body.modules[0].module_name);
-    console.log("Outside Temperature : " +        json.body.modules[0].dashboard_data.Temperature);
-    console.log("Outside Temperature Min/Max: " + json.body.modules[0].dashboard_data.min_temp + "/" + json.body.modules[0].dashboard_data.max_temp);
-    console.log("Outside Humidity : " +           json.body.modules[0].dashboard_data.Humidity);
-
-    var data = {};
-    if(json.body.devices.length > 0){
-      var dashboard_data = [];
-      var device_data = json.body.devices[0].dashboard_data;
-      fillDashBoardData(
-        dashboard_data,
-        moduleType(json.body.devices[0].type),
-        removeDiacritics(json.body.devices[0].module_name),
-        'Temperature' in device_data ? device_data.Temperature : 0,
-        'min_temp'    in device_data ? device_data.min_temp    : 0,
-        'max_temp'    in device_data ? device_data.max_temp    : 0,
-        'Humidity'    in device_data ? device_data.Humidity    : 0,
-        'Noise'       in device_data ? device_data.Noise       : 0,
-        'CO2'         in device_data ? device_data.CO2         : 0,
-        'Pressure'    in device_data ? device_data.Pressure    : 0,
-        'Rain'        in device_data ? device_data.Rain        : 0);
-      data.module_data = dashboard_data;
-    }
-
-    for(var i=0; i<json.body.modules.length; i++){
-      var dashboard_data = [];
-      var module_data = json.body.modules[i].dashboard_data;
-      fillDashBoardData(
-        dashboard_data,
-        moduleType(json.body.modules[i].type),
-        removeDiacritics(json.body.modules[i].module_name),
-        'Temperature' in module_data ? module_data.Temperature : 0,
-        'min_temp'    in module_data ? module_data.min_temp    : 0,
-        'max_temp'    in module_data ? module_data.max_temp    : 0,
-        'Humidity'    in module_data ? module_data.Humidity    : 0,
-        'Noise'       in module_data ? module_data.Noise       : 0,
-        'CO2'         in module_data ? module_data.CO2         : 0,
-        'Pressure'    in module_data ? module_data.Pressure    : 0,
-        'Rain'        in module_data ? module_data.Rain        : 0);
-      data['station_data_' + i] = dashboard_data;
-    }
-
-    console.log(JSON.stringify(data));
-
-    Pebble.sendAppMessage(data, 
+    MessageQueue.sendAppMessage({'reset_data':0}, 
       function(e) {
-        console.log('data sent');
+        console.log('reset sent');
       },
       function(e) {
-        console.log('data NOT sent');
+        console.log('reset NOT sent');
       });
+
+    var result = JSON.parse(e);
+    if(result.body.devices.length > 0){
+      fetchMeasures(result.body.devices[0]);
+    }
+    for(var i=0; i<result.body.modules.length; i++){
+      fetchMeasures(result.body.devices[0], result.body.modules, i);
+    }
   },
   function(e) {
     if(e.responseText){
@@ -200,7 +223,9 @@ function moduleType(type){
   return 0;
 }
 
-function fillDashBoardData(arr, type, name, temp, temp_min, temp_max, humidity, noise, co2, pressure, rain){
+function fillDashBoardData(arr, type, name, temp, temp_min, temp_max, humidity, noise, co2, pressure, rain, measures){
+  pushUInt16(arr, type);
+
   var i = 0;
   for(; i<name.length && i<19; i++)
     pushUInt8(arr, name.charCodeAt(i));
@@ -215,9 +240,32 @@ function fillDashBoardData(arr, type, name, temp, temp_min, temp_max, humidity, 
   pushUInt8(arr,  noise);
   pushUInt16(arr, co2);
   pushUInt16(arr, pressure*10);
-  pushUInt16(arr, rain);
+  pushUInt16(arr, rain*1000);
 
-  pushUInt8(arr, type & 0xFF);
+  // Temperature
+  for(i=0; i<24; i++){
+    pushUInt16(arr, measures[i][0] != null ? measures[i][0] * 10 : 0);
+  }
+  // CO2
+  for(i=0; i<24; i++){
+    pushUInt16(arr, measures[i][1] != null ? measures[i][1] : 0);
+  }
+  // Humidity
+  for(i=0; i<24; i++){
+    pushUInt16(arr, measures[i][2] != null ? measures[i][2] : 0);
+  }
+  // Pressure
+  for(i=0; i<24; i++){
+    pushUInt16(arr, measures[i][3] != null ? measures[i][3] * 10 : 0);
+  }
+  // Noise
+  for(i=0; i<24; i++){
+    pushUInt16(arr, measures[i][4] != null ? measures[i][4] : 0);
+  }
+  // sum_rain
+  for(i=0; i<24; i++){
+    pushUInt16(arr, measures[i][5] != null ? measures[i][5] * 1000 : 0);
+  }  
 }
 
 function renewToken(callback) {
@@ -391,3 +439,6 @@ function removeDiacritics (str) {
   return str;
 
 }
+
+
+var MessageQueue=function(){var RETRY_MAX=5;var queue=[];var sending=false;var timer=null;return{reset:reset,sendAppMessage:sendAppMessage,size:size};function reset(){queue=[];sending=false}function sendAppMessage(message,ack,nack){if(!isValidMessage(message)){return false}queue.push({message:message,ack:ack||null,nack:nack||null,attempts:0});setTimeout(function(){sendNextMessage()},1);return true}function size(){return queue.length}function isValidMessage(message){if(message!==Object(message)){return false}var keys=Object.keys(message);if(!keys.length){return false}for(var k=0;k<keys.length;k+=1){var validKey=/^[0-9a-zA-Z-_]*$/.test(keys[k]);if(!validKey){return false}var value=message[keys[k]];if(!validValue(value)){return false}}return true;function validValue(value){switch(typeof value){case"string":return true;case"number":return true;case"object":if(toString.call(value)=="[object Array]"){return true}}return false}}function sendNextMessage(){if(sending){return}var message=queue.shift();if(!message){return}message.attempts+=1;sending=true;Pebble.sendAppMessage(message.message,ack,nack);timer=setTimeout(function(){timeout()},1e3);function ack(){clearTimeout(timer);setTimeout(function(){sending=false;sendNextMessage()},200);if(message.ack){message.ack.apply(null,arguments)}}function nack(){clearTimeout(timer);if(message.attempts<RETRY_MAX){queue.unshift(message);setTimeout(function(){sending=false;sendNextMessage()},200*message.attempts)}else{if(message.nack){message.nack.apply(null,arguments)}}}function timeout(){setTimeout(function(){sending=false;sendNextMessage()},1e3);if(message.ack){message.ack.apply(null,arguments)}}}}();

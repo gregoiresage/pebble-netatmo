@@ -11,8 +11,18 @@ typedef enum {
 	NATherm1
 } ModuleType;
 
+typedef enum {
+	Temperature,
+	Humidity,
+	Noise,
+	CO2,
+	Pressure,
+	Rain,
+} MeasureType;
+
 typedef struct {
-	
+	uint16_t	type;
+
 	char		name[20];
 	int16_t 	temperature;
 	int16_t 	temperature_min;
@@ -23,16 +33,25 @@ typedef struct {
 	uint16_t 	pressure;
 	uint16_t 	rain;
 	
-	uint8_t		type;
+	int16_t		data_temperature[24];
+	int16_t		data_co2[24];
+	int16_t		data_humidity[24];
+	int16_t		data_pressure[24];
+	int16_t		data_noise[24];
+	int16_t		data_rain[24];
 
-	bool 		valid;
+	MeasureType displayed_measure;
+
 } DashboardData;
 
-void printData(DashboardData data);
 
-DashboardData getModuleData();
-void setModuleData(DashboardData data);
+void dashboard_data_reset();
+int dashboard_data_count();
 
-int getNumberOfStations();
-DashboardData getStationData(int index);
-void setStationData(int index, DashboardData data);
+DashboardData dashboard_data_get_outdoor();
+void dashboard_data_set_outdoor(DashboardData dashboard_data);
+
+DashboardData dashboard_data_get(int index);
+void dashboard_data_add(DashboardData dashboard_data);
+
+void dashboard_data_print(DashboardData data);
