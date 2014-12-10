@@ -2,28 +2,34 @@
 
 #include "graph_layer.h"
 
+//I really need to improve this code...
 static void layer_update_callback(Layer *me, GContext* ctx) {
 	GraphLayer* graph_layer = *(GraphLayer**)(layer_get_data(me));
 	GRect layer_bounds = layer_get_bounds(me);
 
 	uint16_t x_min = 10;
-	uint16_t y_min = layer_bounds.size.h - 11;
-	uint16_t y_max = 25;
+	uint16_t y_min = layer_bounds.size.h - 15;
+	uint16_t y_max = 20;
 
 	int16_t data_start = 0;
+	uint16_t startY = (y_min + y_max) / 2;
 	if(graph_layer->minimum < 0 && graph_layer->maximum < 0){
-		data_start = graph_layer->maximum + (graph_layer->maximum - graph_layer->minimum) * 10 / 100;
+		data_start = graph_layer->maximum;
+		startY = y_max;
+		y_max += 10;
 	}
 	else if (graph_layer->minimum > 0 && graph_layer->maximum > 0){
-		data_start = graph_layer->minimum - (graph_layer->maximum - graph_layer->minimum) * 10 / 100;
+		data_start = graph_layer->minimum;
+		startY = y_min;
+		y_min -= 10;
 	}
-
-	uint16_t startY = 0;
-	if(graph_layer->maximum == 0 && graph_layer->minimum == 0){
+	else if (graph_layer->minimum == graph_layer->maximum){
+		data_start = graph_layer->minimum;
 		startY = (y_min + y_max) / 2;
 	}
 	else {
-		startY = y_min - abs((graph_layer->minimum - data_start) * (y_max - y_min) / (graph_layer->maximum - data_start));
+		data_start = 0;
+		startY = y_min + graph_layer->minimum * (y_min - y_max) / (graph_layer->maximum - graph_layer->minimum);
 	}
 
 	graphics_context_set_stroke_color(ctx, graph_layer->fgColor);
@@ -31,27 +37,42 @@ static void layer_update_callback(Layer *me, GContext* ctx) {
 		graphics_draw_line(ctx,GPoint(0,startY), GPoint(144,startY));
 	}
 
-	if(graph_layer->maximum != 0 || graph_layer->minimum != 0){
-		graphics_context_set_fill_color(ctx, graph_layer->fgColor);
-		for(size_t i=0; i<24; i++){
-			int16_t data = graph_layer->data[i];
-			
-			uint16_t height = 0;
-			if(graph_layer->maximum != data_start){
-				height = abs((data - data_start) * (y_min - y_max) / (graph_layer->maximum - data_start));
-				height = height * graph_layer->percent / 100;
-			}
-			
-			if(data > data_start){
-				graphics_fill_rect(ctx, GRect(x_min + i*(4+1), startY - height, 2, height), 0, GCornersAll);
-			}
-			else {
-				graphics_fill_rect(ctx, GRect(x_min + i*(4+1), startY, 2, height), 0, GCornersAll);
-			}
+	graphics_context_set_fill_color(ctx, graph_layer->fgColor);
+
+	int16_t data = 0;
+	uint16_t height = 0;
+	uint16_t start = 0;
+	for(size_t i=0; i<24; i++){
+		data = graph_layer->data[i];
+		// data = i % 2 ? -data : data;
+		
+		height = 0;
+		if(graph_layer->maximum != graph_layer->minimum)
+			height = abs((data - data_start) * (y_min - y_max) / (graph_layer->maximum - graph_layer->minimum));
+		if(data_start != 0)
+			height += 10;
+		height = height * graph_layer->percent / 100;
+		
+		start = 0;
+		if(data > data_start){
+			start = startY - height;
 		}
+		else if(data < data_start){
+			start = startY;
+		}
+		else if(data_start == graph_layer->minimum){
+			start = startY - height;
+		}
+		else if(data_start == graph_layer->maximum){
+			start = startY;
+		}
+
+		graphics_fill_rect(ctx, GRect(x_min + i*(4+1), start, 2, height), 0, GCornersAll);
+
 	}
 
 	graphics_context_set_text_color(ctx, graph_layer->fgColor);
+
 	graphics_draw_text(ctx,
       graph_layer->title,
       fonts_get_system_font(FONT_KEY_FONT_FALLBACK),
@@ -128,11 +149,14 @@ void graph_layer_animate_to(GraphLayer *graph_layer, char* title, char* legend, 
 	memcpy(graph_layer->data, data, sizeof(graph_layer->data));
 	graph_layer->maximum = -32000;
 	graph_layer->minimum = 32000;
+	int16_t value = 0;
 	for(size_t i=0; i<24; i++){
-		if(graph_layer->data[i] > graph_layer->maximum)
-			graph_layer->maximum = graph_layer->data[i];
-		if(graph_layer->data[i] < graph_layer->minimum)
-			graph_layer->minimum = graph_layer->data[i];
+		value = graph_layer->data[i];
+		// value = i % 2 ? -value : value;
+		if(value  > graph_layer->maximum)
+			graph_layer->maximum = value;
+		if(value < graph_layer->minimum)
+			graph_layer->minimum = value;
 	}
 	graph_layer->percent = 0;
 	animation_schedule(graph_layer->animation);
