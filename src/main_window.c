@@ -42,18 +42,18 @@ static void destroy_property_animation(PropertyAnimation **prop_animation) {
 }
 
 static void animate(bool toUp){
-  if(layout == TOP && toUp)
+  if(layout == TOP && !toUp)
     return;
 
-  if(layout == BOTTOM && !toUp)
+  if(layout == BOTTOM && toUp)
     return;
 
   GRect to_rect;
   if (layout == MIDDLE && toUp) {
-    to_rect = GRect(0, 0, 144, 168);
+    to_rect = GRect(0, 168 - 2, 144, 168);
     layout = TOP;
   } else if (layout == MIDDLE && !toUp) {
-    to_rect = GRect(0, 168 - 2, 144, 168);
+    to_rect = GRect(0, 0, 144, 168);
     layout = BOTTOM;
   }
   else {
@@ -61,8 +61,8 @@ static void animate(bool toUp){
     layout = MIDDLE;
   }
 
-  dashboard_layer_set_graph_hidden(s_top_layer, layout != BOTTOM);
-  dashboard_layer_set_graph_hidden(s_bottom_layer, layout != TOP);
+  dashboard_layer_set_graph_hidden(s_top_layer, layout != TOP);
+  dashboard_layer_set_graph_hidden(s_bottom_layer, layout != BOTTOM);
 
   destroy_property_animation(&prop_animation);
 
@@ -79,12 +79,10 @@ static void animate(bool toUp){
 
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
   animate(true);
-  // dashboard_layer_update_data(s_bottom_layer, dashboard_data_get(current_station));
 }
 
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
   animate(false);
-  // dashboard_layer_update_data(s_top_layer, dashboard_data_get(0));
 }
 
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -92,10 +90,10 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
     current_station = (current_station + 1) % (dashboard_data_count());
     dashboard_layer_update_data(s_bottom_layer, dashboard_data_get(current_station));
   }
-  else if(layout == TOP){
+  else if(layout == BOTTOM){
     dashboard_layer_switch_graph(s_bottom_layer);
   }
-  else if(layout == BOTTOM){
+  else if(layout == TOP){
     dashboard_layer_switch_graph(s_top_layer);
   }
 }
