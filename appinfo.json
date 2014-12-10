@@ -3,8 +3,8 @@
   "shortName": "NetAtmo",
   "longName": "NetAtmo",
   "companyName": "Gregoire Sage",
-  "versionCode": 4,
-  "versionLabel": "0.4",
+  "versionCode": 8,
+  "versionLabel": "0.8",
   "watchapp": {
     "watchface": false
   },
@@ -12,11 +12,8 @@
     "configurable"
   ],
   "appKeys": {
-    "module_data":    0,
-    "station_data_0": 1,
-    "station_data_1": 2,
-    "station_data_2": 3,
-    "station_data_3": 4,
+    "dashboard_data": 0,
+    "reset_data":     1,
 
     "error" : 1000
   },
