@@ -23,7 +23,7 @@ typedef enum {
 typedef struct {
 	uint16_t	type;
 
-	char		name[20];
+	char		name[40];
 	int16_t 	temperature;
 	int16_t 	temperature_min;
 	int16_t 	temperature_max;

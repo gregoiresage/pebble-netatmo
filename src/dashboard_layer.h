@@ -11,7 +11,7 @@ typedef struct {
 	GColor bgColor;
 	GColor fgColor;
 
-	char text_name[20];
+	char text_name[40];
 	char text_main[10];
 	char text_subtitle[20];
 

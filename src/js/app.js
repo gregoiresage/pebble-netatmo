@@ -133,7 +133,7 @@ function fetchMeasures(device, modules, index){
     fillDashBoardData(
         array,
         modules ? moduleType(modules[index].type) : moduleType(device.type),
-        removeDiacritics(modules ? modules[index].module_name : device.module_name),
+        modules ? modules[index].module_name : device.module_name,
         'Temperature' in dashboard_data ? dashboard_data.Temperature : 0,
         'min_temp'    in dashboard_data ? dashboard_data.min_temp    : 0,
         'max_temp'    in dashboard_data ? dashboard_data.max_temp    : 0,
@@ -235,11 +235,12 @@ function moduleType(type){
 function fillDashBoardData(arr, type, name, temp, temp_min, temp_max, humidity, noise, co2, pressure, rain, measures){
   pushUInt16(arr, type);
 
+  var utf8Name = toUTF8Array(name);
   var i = 0;
-  for(; i<name.length && i<19; i++)
-    pushUInt8(arr, name.charCodeAt(i));
+  for(; i<utf8Name.length && i<39; i++)
+    pushUInt8(arr, utf8Name[i]);
   
-  for(; i<20; i++)
+  for(; i<40; i++)
     pushUInt8(arr, 0);
 
   pushUInt16(arr, (units_metric == 0 ? 32 + 1.8 * temp : temp) * 10);
