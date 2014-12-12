@@ -24,7 +24,7 @@
 			</div>
 			<div data-role="content">
     			{% if refresh_token is defined %}
-    				{% if devices|length == 0 %}
+    				{% if (devices is not defined) or (devices|length == 0) %}
     					<p>We only support Weather Stations and we didn't find one...</p>
     				{% else %}
     					<fieldset id="devices" data-role="controlgroup">
