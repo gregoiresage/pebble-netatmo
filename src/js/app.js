@@ -74,7 +74,7 @@ Pebble.addEventListener("ready", function(e) {
 
 Pebble.addEventListener('showConfiguration', function(e) {
   read();
-  var uri = HOST + '/config.html';
+  var uri = HOST + '/';
   if(refresh_token !== null){
     uri += "?refresh_token=" + encodeURIComponent(refresh_token);
   }
@@ -84,6 +84,9 @@ Pebble.addEventListener('showConfiguration', function(e) {
 
 Pebble.addEventListener('webviewclosed', function(e) {
   console.log('webviewclosed ' + e.response);
+  if(e.response == "CANCELLED"){
+    return;
+  }
   var s = decodeURIComponent(e.response);
   if (s) {
     var c = JSON.parse(s);
@@ -98,6 +101,7 @@ Pebble.addEventListener('webviewclosed', function(e) {
       disconnect();
     }
   }
+  console.log('webviewclosed ' + e.response);
 });
 
 function fetchMeasures(device, modules, index){

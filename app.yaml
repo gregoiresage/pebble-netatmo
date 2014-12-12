@@ -1,5 +1,5 @@
 application: pebble-netatmo
-version: 1
+version: 2
 runtime: python27
 api_version: 1
 threadsafe: true
@@ -8,7 +8,9 @@ handlers:
 - url: /auth.*
   script: gae.auth.application
 - url: /config.*
-  script: gae.auth.application
+  script: gae.netatmo.application
+- url: /
+  script: gae.netatmo.application
 
 libraries:
 - name: webapp2

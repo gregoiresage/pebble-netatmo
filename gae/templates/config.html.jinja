@@ -15,33 +15,34 @@
 		  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
 		  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
 		  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-		
 		  ga('create', 'UA-44039387-5', 'auto');
 		  ga('send', 'pageview');
-		
 		</script>
 		<div data-role="page" id="page1">
 			<div data-role="header" id="header">
-				<button id="b-cancel" data-icon="back" data-iconpos="left" data-inline="true" data-mini="true">Cancel</button>
-				<h1>Pebble NetAtmo</h1>
+				<h1>NetAtmo for Pebble</h1>
 			</div>
 			<div data-role="content">
     			{% if refresh_token is defined %}
-    				<fieldset id="devices" data-role="controlgroup">
-    			    <legend>Choose the main device :</legend>
-    				{% for device in devices %}
-    					<input type="radio" name="station-choice" id="{{ device._id }}" value="{{ device._id }}" checked="checked"/>
-    					<label for="{{ device._id }}">{{ device.station_name }}</label>
-    				{% endfor %}
-    				</fieldset>
-    				<div class="ui-field-contain">
-						<label for="units">Units</label>
-						<input type="checkbox" data-role="flipswitch" name="units" id="units" data-on-text="°C" data-off-text="°F" checked="checked"/>
-					</div>
-    				<button id="b-submit" data-theme="b" data-icon="check" data-iconpos="right">Save</button>
+    				{% if devices|length == 0 %}
+    					<p>We only support Weather Stations and we didn't find one...</p>
+    				{% else %}
+    					<fieldset id="devices" data-role="controlgroup">
+    			    	<legend>Choose your Weather station :</legend>
+    					{% for device in devices %}
+    						<input type="radio" name="station-choice" id="{{ device._id }}" value="{{ device._id }}" {% if loop.index == 1 %}checked="	checked"{% endif %}/>
+    						<label for="{{ device._id }}">{{ device.station_name }}</label>
+    					{% endfor %}
+    					</fieldset>
+    					<div class="ui-field-contain">
+							<label for="units">Units</label>
+							<input type="checkbox" data-role="flipswitch" name="units" id="units" data-on-text="°C" data-off-text="°F" checked="checked"/>
+						</div>
+    					<button id="b-submit" data-theme="b" data-icon="check" data-iconpos="right">Save</button>
+    				{% endif %}
 				{% else %}
 					{% if error is defined %}
-					<p>An error ocured : {{ error }}</p>
+						<p>An error ocured : {{ error }}</p>
 					{% endif %}
 					<button data-theme="b" id="b-authorize">Authorize</button>
 				{% endif %}
@@ -49,10 +50,6 @@
 		</div>
 		<script>
 			$().ready(function() {
-				$("#b-cancel").click(function() {
-					window.location = "pebblejs://close#";
-				});
-
 				$("#b-submit").click(function() {
 					var data = {
 					{% if refresh_token is defined %}
