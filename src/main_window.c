@@ -86,7 +86,7 @@ static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
 }
 
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
-  if(layout == MIDDLE){
+  if(layout == MIDDLE && dashboard_data_count() > 1){
     current_station = (current_station + 1) % (dashboard_data_count());
     dashboard_layer_update_data(s_bottom_layer, dashboard_data_get(current_station));
   }
