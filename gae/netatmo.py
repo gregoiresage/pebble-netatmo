@@ -25,6 +25,7 @@ class MainPage(webapp2.RequestHandler):
         elif refresh_token :
             args = {}
             args["refresh_token"] = self.request.get("refresh_token")
+            args["pebble_token"]  = self.request.get("pebble_token")
             result = query_json(config.host + '/auth/refresh', urlencode(args))
 
             if 'error' in result :

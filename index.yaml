@@ -1,0 +1,7 @@
+indexes:
+- kind: PebbleUser
+  ancestor: no
+  properties:
+  - name: pebble_id
+  - name: refresh_count
+    direction: desc

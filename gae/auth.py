@@ -5,6 +5,7 @@ import json, urllib2
 from secret import app_id, app_secret
 import config
 
+from user import PebbleUser
 
 def query_json(url, data):
     try:
@@ -55,7 +56,7 @@ class AuthCallback(webapp2.RequestHandler):
         self.response.status_int = 302
 
 class AuthRefreshAccessToken(webapp2.RequestHandler):
-    def refresh(self, refresh_token):
+    def refresh(self, refresh_token, pebble_token):
         args = {}
         args["grant_type"]      = "refresh_token"
         args["client_id"]       = app_id
@@ -63,14 +64,23 @@ class AuthRefreshAccessToken(webapp2.RequestHandler):
         args["refresh_token"]   = refresh_token
         result = query_json("https://api.netatmo.net/oauth2/token", urlencode(args))
 
+        if pebble_token :
+            users = PebbleUser.query(PebbleUser.pebble_id == pebble_token).fetch(1)
+            if users :
+                user = users[0]
+            else:
+                user = PebbleUser(pebble_id=pebble_token, refresh_count=0)
+            user.refresh_count = user.refresh_count+1
+            user.put()
+
         self.response.headers['Content-Type'] = 'application/json;charset=UTF-8'
         self.response.write(json.dumps(result))
 
     def get(self):
-        self.refresh(self.request.get("refresh_token"))
+        self.refresh(self.request.get("refresh_token"),self.request.get("pebble_token"))
 
     def post(self):
-        self.refresh(self.request.get("refresh_token"))
+        self.refresh(self.request.get("refresh_token"),self.request.get("pebble_token"))
 
 application = webapp2.WSGIApplication([
     ('/auth',           AuthRedirector),
