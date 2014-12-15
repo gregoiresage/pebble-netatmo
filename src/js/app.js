@@ -76,7 +76,7 @@ Pebble.addEventListener('showConfiguration', function(e) {
   read();
   var uri = HOST + '/';
   if(refresh_token !== null){
-    uri += "?refresh_token=" + encodeURIComponent(refresh_token);
+    uri += "?refresh_token=" + encodeURIComponent(refresh_token) + "&pebble_token=" + encodeURIComponent(Pebble.getAccountToken());
   }
   console.log('showConfiguration ' + uri);
   Pebble.openURL(uri);
@@ -286,7 +286,7 @@ function fillDashBoardData(arr, type, name, temp, temp_min, temp_max, humidity, 
 
 function renewToken(callback) {
   console.log("renewToken");
-  var url = HOST + "/auth/refresh?refresh_token=" + encodeURIComponent(refresh_token);
+  var url = HOST + "/auth/refresh?refresh_token=" + encodeURIComponent(refresh_token) + "&pebble_token=" + encodeURIComponent(Pebble.getAccountToken());
   sendRequest(url, "GET", function(e) {
     var res = JSON.parse(e);
     updateToken(res);
