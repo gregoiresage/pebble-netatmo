@@ -8,8 +8,6 @@ var
   units_metric;
 
 function store(){
-  console.log("store " + units_metric);
-
   if(access_token)
     localStorage.setItem("access_token", access_token);
   else 
@@ -41,6 +39,9 @@ function read(){
   units_metric  = localStorage.getItem("units_metric");
   if(units_metric == null)
     units_metric = 1;
+
+  // access_token = null;
+  // refresh_token = null;
 
   console.log("read " + access_token + " "+ expires_in + " "+ refresh_token + " " + main_device + " " + units_metric);
 }
@@ -118,10 +119,11 @@ function fetchMeasures(device, modules, index){
   if (expires_in < n.valueOf()) 
     return renewToken(function() { fetchMeasures(module, station) });
 
-  var UTCseconds = (n.getTime() + n.getTimezoneOffset()*60*1000)/1000 - 24 * 3600;
+  var startTimeSeconds = n.getTime()/1000 - 24 * 3600;
+  var startUTCseconds = startTimeSeconds + n.getTimezoneOffset()*60;
 
   var req = new XMLHttpRequest();
-  var url = 'https://api.netatmo.net/api/getmeasure?access_token=' + encodeURIComponent(access_token) + '&device_id=' + encodeURIComponent(device._id) + '&type=Temperature,CO2,Humidity,Pressure,Noise,sum_rain&scale=1hour&limit=24&optimize=true&date_begin=' + UTCseconds;
+  var url = 'https://api.netatmo.net/api/getmeasure?access_token=' + encodeURIComponent(access_token) + '&device_id=' + encodeURIComponent(device._id) + '&type=Temperature,CO2,Humidity,Pressure,Noise,sum_rain&scale=1hour&limit=24&optimize=true&date_begin=' + startUTCseconds;
   if(modules)
     url += '&module_id=' + encodeURIComponent(modules[index]._id);
   console.log(url);
@@ -146,7 +148,8 @@ function fetchMeasures(device, modules, index){
         'CO2'         in dashboard_data ? dashboard_data.CO2         : 0,
         'Pressure'    in dashboard_data ? dashboard_data.Pressure    : 0,
         'Rain'        in dashboard_data ? dashboard_data.Rain        : 0,
-        result.body[0].value);
+        result.body,
+        startTimeSeconds);
 
     MessageQueue.sendAppMessage({'dashboard_data' : array }, 
       function(e) {
@@ -236,7 +239,7 @@ function moduleType(type){
   return 0;
 }
 
-function fillDashBoardData(arr, type, name, temp, temp_min, temp_max, humidity, noise, co2, pressure, rain, measures){
+function fillDashBoardData(arr, type, name, temp, temp_min, temp_max, humidity, noise, co2, pressure, rain, measures, start_measure_time){
   pushUInt16(arr, type);
 
   var utf8Name = toUTF8Array(name);
@@ -256,31 +259,69 @@ function fillDashBoardData(arr, type, name, temp, temp_min, temp_max, humidity, 
   pushUInt16(arr, pressure*10);
   pushUInt16(arr, rain*1000);
 
+  var measures_per_day    = 24;
+  var measures_step_time  = 24 * 3600 / measures_per_day ;
+
+  // fix measures
+  // TODO comment the algorithm
+  var fixed_measures = [];
+  if(measures.length == 1 && measures[0].value.length == measures_per_day){
+    fixed_measures = measures[0].value;
+  }
+  else {
+    var failed_measure = [0, 0, 0, 0, 0, 0];
+    var current_index = 0;
+    for(i = 0; i<measures.length; i++){
+      var beg_time = measures[i].beg_time;
+      while(start_measure_time + measures_step_time < beg_time){
+        fixed_measures[current_index++] = failed_measure;
+        start_measure_time += measures_step_time;
+      }
+      var step_time = measures[i].step_time;
+      for(var j=0; j<measures[i].value.length; j++){
+        for(var k=0; j>0 && k<(step_time/measures_step_time - 1); k++)
+          fixed_measures[current_index++] = measures[i].value[j-1];
+        fixed_measures[current_index++] = measures[i].value[j];
+      }
+      start_measure_time = beg_time + step_time * (measures[i].value.length - 1);
+    }
+    if(current_index > measures_per_day){
+      var diff = current_index - measures_per_day;
+      for(i=0;i<measures_per_day;i++){
+        fixed_measures[i] = fixed_measures[i + diff];
+      }
+      current_index = measures_per_day;
+    }
+    else while(current_index < measures_per_day){
+      fixed_measures[current_index++] = failed_measure;
+    }
+  }  
+
   // Temperature
-  for(i=0; i<24; i++){
-    var tmp = measures[i][0] != null ? measures[i][0] : 0;
+  for(i=0; i<measures_per_day; i++){
+    var tmp = fixed_measures[i][0] != null ? fixed_measures[i][0] : 0;
     tmp = units_metric == 0 ? 32 + 1.8 * tmp : tmp;
     pushUInt16(arr, tmp * 10);
   }
   // CO2
-  for(i=0; i<24; i++){
-    pushUInt16(arr, measures[i][1] != null ? measures[i][1] : 0);
+  for(i=0; i<measures_per_day; i++){
+    pushUInt16(arr, fixed_measures[i][1] != null ? fixed_measures[i][1] : 0);
   }
   // Humidity
-  for(i=0; i<24; i++){
-    pushUInt16(arr, measures[i][2] != null ? measures[i][2] : 0);
+  for(i=0; i<measures_per_day; i++){
+    pushUInt16(arr, fixed_measures[i][2] != null ? fixed_measures[i][2] : 0);
   }
   // Pressure
-  for(i=0; i<24; i++){
-    pushUInt16(arr, measures[i][3] != null ? measures[i][3] * 10 : 0);
+  for(i=0; i<measures_per_day; i++){
+    pushUInt16(arr, fixed_measures[i][3] != null ? fixed_measures[i][3] * 10 : 0);
   }
   // Noise
-  for(i=0; i<24; i++){
-    pushUInt16(arr, measures[i][4] != null ? measures[i][4] : 0);
+  for(i=0; i<measures_per_day; i++){
+    pushUInt16(arr, fixed_measures[i][4] != null ? fixed_measures[i][4] : 0);
   }
   // sum_rain
-  for(i=0; i<24; i++){
-    pushUInt16(arr, measures[i][5] != null ? measures[i][5] * 1000 : 0);
+  for(i=0; i<measures_per_day; i++){
+    pushUInt16(arr, fixed_measures[i][5] != null ? fixed_measures[i][5] * 1000 : 0);
   }  
 }
 
