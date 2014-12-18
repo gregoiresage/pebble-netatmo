@@ -4,7 +4,7 @@
 #include "dashboard_data.h"
 #include "graph_layer.h"
 
-typedef struct {
+typedef struct DashboardLayer {
 	GFont s_res_bitham_42_light;
 	GFont s_res_gothic_18_bold;
 
@@ -32,7 +32,7 @@ void dashboard_layer_destroy(DashboardLayer *dashboard_layer);
 
 Layer* dashboard_layer_get_layer(DashboardLayer *dashboard_layer);
 
-void dashboard_layer_update_data(DashboardLayer *dashboard_layer, DashboardData dashboard_data);
+void dashboard_layer_update_data(DashboardLayer *dashboard_layer, DashboardData *dashboard_data);
 
 void dashboard_layer_switch_graph(DashboardLayer *dashboard_layer);
 

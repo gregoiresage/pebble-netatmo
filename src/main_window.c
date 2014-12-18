@@ -1,6 +1,8 @@
 #include <pebble.h>
 
 #include "dashboard_layer.h"
+#include "user_data.h"
+#include "main_window.h"
 
 static Window *s_window;
 
@@ -17,10 +19,14 @@ static PropertyAnimation *prop_animation;
 #define MIDDLE  2
 static int layout = MIDDLE;
 
+static UserData* user_data;
+
 static int current_station = 0;
+static int current_module_in_station = -1;
 
 static GBitmap *image_error;
 static char text_error[20] = "";
+static bool isError = false;
 
 static void animation_started(Animation *animation, void *data) {
 }
@@ -85,10 +91,23 @@ static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
   animate(false);
 }
 
+static bool displayNextModule(){
+  uint8_t previousModule = current_module_in_station;
+  uint8_t module_count = station_data_get_module_count(user_data->stations[current_station]);
+  current_module_in_station = (current_module_in_station + 1) % module_count;
+  if(station_data_get_module_data(user_data->stations[current_station], current_module_in_station)->type == NAModule1){
+    current_module_in_station = (current_module_in_station + 1) % module_count;
+  }
+  return current_module_in_station != previousModule;
+} 
+
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
-  if(layout == MIDDLE && dashboard_data_count() > 1){
-    current_station = (current_station + 1) % (dashboard_data_count());
-    dashboard_layer_update_data(s_bottom_layer, dashboard_data_get(current_station));
+  if(isError)
+    return;
+
+  if(layout == MIDDLE && station_data_get_module_count(user_data->stations[current_station]) > 1){
+    if(displayNextModule())
+      refresh_window();
   }
   else if(layout == BOTTOM){
     dashboard_layer_switch_graph(s_bottom_layer);
@@ -98,9 +117,21 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
   }
 }
 
+static void select_long_click_handler(ClickRecognizerRef recognizer, void *context) {
+  if(isError)
+    return;
+
+  if(layout == MIDDLE && user_data->stations_count > 1){
+    current_station = (current_station + 1) % (user_data->stations_count);
+    current_module_in_station = 0;
+    refresh_window();
+  }
+}
+
 void click_config_provider(void *context) {
   window_single_click_subscribe(BUTTON_ID_UP, up_click_handler);
   window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler);
+  window_long_click_subscribe(BUTTON_ID_SELECT, 1000, select_long_click_handler, NULL);
   window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
 }
 
@@ -108,9 +139,10 @@ void setError(char* error){
   if(error){
     snprintf(text_error, sizeof(text_error), "%s", error);
   }
-  layer_set_hidden(s_error_layer,                             error == NULL);
-  layer_set_hidden(dashboard_layer_get_layer(s_top_layer), error != NULL);
-  layer_set_hidden(dashboard_layer_get_layer(s_bottom_layer), error != NULL);
+  isError = error != NULL;
+  layer_set_hidden(s_error_layer,                             !isError);
+  layer_set_hidden(dashboard_layer_get_layer(s_top_layer),    isError);
+  layer_set_hidden(dashboard_layer_get_layer(s_bottom_layer), isError);
 }
 
 static void cb_erro_draw(Layer *layer, GContext *g_ctx) {
@@ -160,7 +192,10 @@ static void handle_window_unload(Window* window) {
   destroy_ui();
 }
 
-void show_main_window(void) {
+void show_main_window(UserData* user_data_) {
+  user_data = user_data_;
+  current_station = 0;
+  current_module_in_station = 0;
   initialise_ui();
   window_set_window_handlers(s_window, (WindowHandlers) {
     .unload = handle_window_unload,
@@ -172,7 +207,26 @@ void hide_main_window(void) {
   window_stack_remove(s_window, true);
 }
 
-void refresh_window(void){
-  dashboard_layer_update_data(s_top_layer,    dashboard_data_get_outdoor());
-  dashboard_layer_update_data(s_bottom_layer, dashboard_data_get(0));
+static DashboardData* get_outdoor_data(StationData* station_data){
+  DashboardData* outdoor_dashboard = NULL;
+  DashboardData* indoor_dashboard = NULL;
+  for(uint8_t i=0; i<station_data->modules_count; i++){
+    if(station_data->modules_dashboard[i]->type == NAModule1)
+      outdoor_dashboard = station_data->modules_dashboard[i];
+    else if(station_data->modules_dashboard[i]->type == NAMain)
+      indoor_dashboard = station_data->modules_dashboard[i];
+  }
+  if(outdoor_dashboard && indoor_dashboard){
+    memcpy(outdoor_dashboard->data_pressure, indoor_dashboard->data_pressure, 24 * sizeof(int16_t));
+  }
+  return outdoor_dashboard;
 }
+
+void refresh_window(void){
+  APP_LOG(APP_LOG_LEVEL_INFO, "refresh_window %d", current_module_in_station);
+  dashboard_layer_update_data(s_top_layer,    get_outdoor_data(user_data->stations[current_station]));
+  if(current_module_in_station == -1)
+    displayNextModule();
+  dashboard_layer_update_data(s_bottom_layer, station_data_get_module_data(user_data->stations[current_station], current_module_in_station));
+}
+

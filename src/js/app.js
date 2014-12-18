@@ -105,7 +105,129 @@ Pebble.addEventListener('webviewclosed', function(e) {
   console.log('webviewclosed ' + e.response);
 });
 
-function fetchMeasures(device, modules, index){
+function fetchData(){
+  console.log("fetchData " + access_token);
+  if (!access_token){
+    senderror("Please sign in");
+    return;
+  }
+
+  var n = new Date;
+  console.log("fetchData " + (expires_in < n.valueOf()) + " " + expires_in + " " + n.valueOf());
+  if (expires_in < n.valueOf()) 
+    return renewToken(function() { fetchData() });
+
+  var req = new XMLHttpRequest();
+  var url = 'https://api.netatmo.net/api/devicelist?access_token=' + encodeURIComponent(access_token) + '&device_id=' + encodeURIComponent(main_device);
+  console.log(url);
+  sendRequest(url, "GET", 
+  function(e) {
+    var result = JSON.parse(e);
+
+    // console.log(e);
+
+    var names = [''];
+    var device_ids = [main_device];
+
+    for(var i=0; i<result.body.devices.length; i++){
+      if(result.body.devices[i]._id == main_device)
+        names[0] = toUTF8Array(result.body.devices[i].station_name, 40);
+      else {
+        device_ids[device_ids.length] = result.body.devices[i]._id;
+        names[names.length]           = toUTF8Array(result.body.devices[i].station_name, 40);
+      }
+    }
+
+    // names[1] = toUTF8Array(result.body.devices[0].station_name, 40);
+    // device_ids[1] = main_device;
+
+    var names_arr = [];
+    for(var i = 0; i<names.length; i++)
+      for(var j = 0; j<40; j++)
+        pushUInt8(names_arr, names[i][j]);
+
+    MessageQueue.sendAppMessage({'reset_data':names_arr}, 
+      function(e) {
+        console.log('reset sent');
+        fetchDataForDevices(device_ids);
+      },
+      function(e) {
+        console.log('reset NOT sent');
+      });
+  },
+  function(e) {
+    if(e.responseText){
+      var response = JSON.parse(e.responseText);
+      if(response.error && response.error.code == 2){
+        // Invalid access token
+        disconnect();
+        senderror("Please sign in");
+      }
+    }
+    else if(e.status == 500){
+      // Invalid deviceID ???
+      senderror("Please sign in");
+    }
+
+    console.log("fetchData Error")
+  },
+  function(e){
+    senderror("Connection timeout");
+  });
+}
+
+function fetchDataForDevices(device_ids){
+  console.log("fetchDataForDevices " + device_ids);
+  if (!access_token){
+    senderror("Please sign in");
+    return;
+  }
+
+  var n = new Date;
+  if (expires_in < n.valueOf()) 
+    return renewToken(function() { fetchDataForDevices(device_ids) });
+
+  for(var d=0; d<device_ids.length; d++){
+    var req = new XMLHttpRequest();
+    var url = 'https://api.netatmo.net/api/devicelist?access_token=' + encodeURIComponent(access_token) + '&device_id=' + encodeURIComponent(device_ids[d]);
+    console.log(url);
+    (function(id) {
+        // here the value of d was passed into as the argument id
+        // and will be captured in this function closure so each
+        // iteration of the loop can have it's own value
+        sendRequest(url, "GET", 
+        function(e) {
+          var result = JSON.parse(e);
+          if(result.body.devices.length > 0){
+            fetchMeasures(id, result.body.devices[0]);
+          }
+          for(var i=0; i<result.body.modules.length; i++){
+            fetchMeasures(id, result.body.devices[0], result.body.modules, i);
+          }
+        },
+        function(e) {
+          if(e.responseText){
+            var response = JSON.parse(e.responseText);
+            if(response.error && response.error.code == 2){
+              // Invalid access token
+              disconnect();
+              senderror("Please sign in");
+            }
+          }
+          else if(e.status == 500){
+            // Invalid deviceID ???
+            senderror("Please sign in");
+          }
+          console.log("fetchData Error")
+        },
+        function(e){
+          senderror("Connection timeout");
+        });
+    })(d);
+  }
+}
+
+function fetchMeasures(id, device, modules, index){
   console.log("fetchMeasures " + device._id);
   if(modules)
     console.log("fetchMeasures module " + modules[index]._id );
@@ -129,15 +251,13 @@ function fetchMeasures(device, modules, index){
   console.log(url);
   sendRequest(url, "GET", 
   function(e) {
-    // console.log("fetchMeasures " + e);
-
     var result = JSON.parse(e);
-
     var dashboard_data = modules ? modules[index].dashboard_data : device.dashboard_data;
-
+    
     var array = [];
     fillDashBoardData(
         array,
+        id,
         modules ? moduleType(modules[index].type) : moduleType(device.type),
         modules ? modules[index].module_name : device.module_name,
         'Temperature' in dashboard_data ? dashboard_data.Temperature : 0,
@@ -158,7 +278,6 @@ function fetchMeasures(device, modules, index){
       function(e) {
         console.log('data NOT sent');
       });
-
   },
   function(e) {
     if(e.responseText){
@@ -175,57 +294,9 @@ function fetchMeasures(device, modules, index){
       // senderror("Please sign in");
     }
     console.log("fetchMeasures Error")
-  });
-}
-
-function fetchData(){
-  console.log("fetchData " + access_token);
-  if (!access_token){
-    senderror("Please sign in");
-    return;
-  }
-
-  var n = new Date;
-  console.log("fetchData " + (expires_in < n.valueOf()) + " " + expires_in + " " + n.valueOf());
-  if (expires_in < n.valueOf()) 
-    return renewToken(function() { fetchData() });
-
-  var req = new XMLHttpRequest();
-  var url = 'https://api.netatmo.net/api/devicelist?access_token=' + encodeURIComponent(access_token) + '&device_id=' + encodeURIComponent(main_device);
-  console.log(url);
-  sendRequest(url, "GET", 
-  function(e) {
-    MessageQueue.sendAppMessage({'reset_data':0}, 
-      function(e) {
-        console.log('reset sent');
-      },
-      function(e) {
-        console.log('reset NOT sent');
-      });
-
-    var result = JSON.parse(e);
-    if(result.body.devices.length > 0){
-      fetchMeasures(result.body.devices[0]);
-    }
-    for(var i=0; i<result.body.modules.length; i++){
-      fetchMeasures(result.body.devices[0], result.body.modules, i);
-    }
   },
-  function(e) {
-    if(e.responseText){
-      var response = JSON.parse(e.responseText);
-      if(response.error && response.error.code == 2){
-        // Invalid access token
-        disconnect();
-        senderror("Please sign in");
-      }
-    }
-    else if(e.status == 500){
-      // Invalid deviceID ???
-      senderror("Please sign in");
-    }
-
-    console.log("fetchData Error")
+  function(e){
+    senderror("Connection timeout");
   });
 }
 
@@ -239,16 +310,14 @@ function moduleType(type){
   return 0;
 }
 
-function fillDashBoardData(arr, type, name, temp, temp_min, temp_max, humidity, noise, co2, pressure, rain, measures, start_measure_time){
+function fillDashBoardData(arr, station_id, type, name, temp, temp_min, temp_max, humidity, noise, co2, pressure, rain, measures, start_measure_time){
+  pushUInt16(arr, station_id);
   pushUInt16(arr, type);
 
-  var utf8Name = toUTF8Array(name);
+  var utf8Name = toUTF8Array(name, 40);
   var i = 0;
-  for(; i<utf8Name.length && i<39; i++)
-    pushUInt8(arr, utf8Name[i]);
-  
   for(; i<40; i++)
-    pushUInt8(arr, 0);
+    pushUInt8(arr, utf8Name[i]);
 
   pushUInt16(arr, (units_metric == 0 ? 32 + 1.8 * temp : temp) * 10);
   pushUInt16(arr, (units_metric == 0 ? 32 + 1.8 * temp_min : temp_min) * 10);
@@ -345,9 +414,10 @@ function renewToken(callback) {
         senderror("Please sign in");
       }
     }
-
     console.log("renewToken Error");
-    
+  },
+  function(e){
+    senderror("Connection timeout");
   });
 }
 
@@ -358,45 +428,3 @@ function updateToken(e) {
   var t = new Date;
   expires_in = t.valueOf() + e.expires_in * 1000 / 2;
 }
-
-// Timeout for (any) http requests, in milliseconds
-var g_xhr_timeout = 6000;
-
-function sendRequest(url, type, success, error, data) {
-  data = data || null;
-  var req = new XMLHttpRequest;
-  req.open(type, url, !0);
-  var xhrTimeout = setTimeout(function() {
-    req.abort();
-    senderror("Connection timeout");
-  }, g_xhr_timeout);
-  req.onload = function() {
-    clearTimeout(xhrTimeout); // got response, no more need in timeout
-    4 == req.readyState && (200 == req.status ? success(req.responseText) : error && error(req))
-  };
-  if(data){
-    req.setRequestHeader("Content-type", "application/json;encoding=utf-8");
-  }
-  req.send(data);
-}
-
-function pushUInt8(array, value){
-   array.push(value >> 0 & 0xFF);
-}
-
-function pushUInt16(array, value){
-  if(value < 0){
-    value = (-value - 1) & 0xFF;
-    value = ~value;
-  }
-   array.push(value >> 0 & 0xFF);
-   array.push(value >> 8 & 0xFF);
-}
-
-function pushUInt32(array, value){
-   array.push(value >> 0 & 0xFF);
-   array.push(value >> 8 & 0xFF);
-   array.push(value >> 16 & 0xFF);
-   array.push(value >> 24 & 0xFF);
-}
-

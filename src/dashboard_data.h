@@ -20,7 +20,7 @@ typedef enum {
 	Rain,
 } MeasureType;
 
-typedef struct {
+typedef struct DashboardData {
 	uint16_t	type;
 
 	char		name[40];
@@ -44,14 +44,7 @@ typedef struct {
 
 } DashboardData;
 
+DashboardData* 	dashboard_data_create();
+void 			dashboard_data_destroy(DashboardData* dashboard_data);
 
-void dashboard_data_reset();
-int dashboard_data_count();
-
-DashboardData dashboard_data_get_outdoor();
-void dashboard_data_set_outdoor(DashboardData dashboard_data);
-
-DashboardData dashboard_data_get(int index);
-void dashboard_data_add(DashboardData dashboard_data);
-
-void dashboard_data_print(DashboardData data);
+void 			dashboard_data_print(DashboardData *data);

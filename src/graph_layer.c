@@ -127,7 +127,7 @@ GraphLayer* graph_layer_create(GRect frame, GColor fgColor){
 		.stopped = (AnimationStoppedHandler) animation_stopped,
 	}, graph_layer);
 
-	animation_set_duration(graph_layer->animation, 1400);
+	animation_set_duration(graph_layer->animation, 800);
 	animation_set_implementation(graph_layer->animation, &(graph_layer->animImpl));
 
 	return graph_layer;

@@ -16,6 +16,13 @@ static void cb_background_draw(Layer *layer, GContext *g_ctx) {
 	graphics_fill_rect(g_ctx,layer_bounds,6,GCornersTop);
 }
 
+static void resetDisplay(DashboardLayer *dashboard_layer){
+	snprintf(dashboard_layer->text_name, sizeof(dashboard_layer->text_name), "---");
+	snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), "---");
+	snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "---");
+	dashboard_layer->dashboard_data.displayed_measure = Temperature;
+}
+
 DashboardLayer* dashboard_layer_create(GRect frame, GColor bgColor){
 	DashboardLayer* dashboard_layer = malloc(sizeof(DashboardLayer));
 
@@ -25,9 +32,7 @@ DashboardLayer* dashboard_layer_create(GRect frame, GColor bgColor){
 	dashboard_layer->s_res_bitham_42_light 	= fonts_get_system_font(FONT_KEY_BITHAM_42_LIGHT);
 	dashboard_layer->s_res_gothic_18_bold 	= fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
 
-	snprintf(dashboard_layer->text_name, sizeof(dashboard_layer->text_name), "---");
-	snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), "---");
-	snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "---");
+	resetDisplay(dashboard_layer);
 	
 	// s_background
 	dashboard_layer->s_background = layer_create_with_data(frame, sizeof(DashboardLayer*));
@@ -136,33 +141,38 @@ static void dashboard_layer_animate_graph(DashboardLayer *dashboard_layer){
 	graph_layer_animate_to(dashboard_layer->s_graph_layer, title, legend, data);
 }
 
-void dashboard_layer_update_data(DashboardLayer *dashboard_layer, DashboardData dashboard_data){
-	memcpy(&(dashboard_layer->dashboard_data), &dashboard_data, sizeof(DashboardData));
-
-	snprintf(dashboard_layer->text_name, sizeof(dashboard_layer->text_name), "%s", dashboard_data.name);
-
-	if(dashboard_data.type == NAMain || dashboard_data.type == NAModule4){
-		snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), "%d.%d°", dashboard_data.temperature/10, abs(dashboard_data.temperature)%10);
-		snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "%d%%  %dppm", dashboard_data.humidity, dashboard_data.co2);
-		dashboard_layer->dashboard_data.displayed_measure = Temperature;
-	}
-	else if(dashboard_data.type == NAModule1){
-		snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), "%d.%d°", dashboard_data.temperature/10, abs(dashboard_data.temperature)%10);
-		snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "%d%% %d.%dmb", dashboard_data.humidity, dashboard_data.pressure/10, dashboard_data.pressure%10);
-		dashboard_layer->dashboard_data.displayed_measure = Temperature;
-	}
-	else if(dashboard_data.type == NAModule3){
-		snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), "%d.%03d", dashboard_data.rain/1000, dashboard_data.rain%1000);
-		snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "mm");
-		dashboard_layer->dashboard_data.displayed_measure = Rain;
+void dashboard_layer_update_data(DashboardLayer *dashboard_layer, DashboardData *dashboard_data){
+	if(dashboard_data){
+		memcpy(&(dashboard_layer->dashboard_data), dashboard_data, sizeof(DashboardData));
+	
+		snprintf(dashboard_layer->text_name, sizeof(dashboard_layer->text_name), "%s", dashboard_data->name);
+	
+		if(dashboard_data->type == NAMain || dashboard_data->type == NAModule4){
+			snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), "%d.%d°", dashboard_data->temperature/10, abs(dashboard_data->temperature)%10);
+			snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "%d%%  %dppm", dashboard_data->humidity, dashboard_data->co2);
+			dashboard_layer->dashboard_data.displayed_measure = Temperature;
+		}
+		else if(dashboard_data->type == NAModule1){
+			snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), "%d.%d°", dashboard_data->temperature/10, abs(dashboard_data->temperature)%10);
+			snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "%d%% %d.%dmb", dashboard_data->humidity, dashboard_data->pressure/10, dashboard_data->pressure%10);
+			dashboard_layer->dashboard_data.displayed_measure = Temperature;
+		}
+		else if(dashboard_data->type == NAModule3){
+			snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), "%d.%03d", dashboard_data->rain/1000, dashboard_data->rain%1000);
+			snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "mm");
+			dashboard_layer->dashboard_data.displayed_measure = Rain;
+		}
+		else {
+		  snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), " ");
+		  snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), " ");
+		  dashboard_layer->dashboard_data.displayed_measure = Temperature;
+		}
+	
+		dashboard_layer_animate_graph(dashboard_layer);
 	}
 	else {
-	  snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), " ");
-	  snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), " ");
-	  dashboard_layer->dashboard_data.displayed_measure = Temperature;
+		resetDisplay(dashboard_layer);
 	}
-
-	dashboard_layer_animate_graph(dashboard_layer);
 
 	layer_mark_dirty(dashboard_layer->s_background);
 }

@@ -6,23 +6,28 @@
 #define KEY_RESET_DATA      1
 #define KEY_ERROR           1000
 
+UserData user_data;
+
 static void cb_in_received_handler(DictionaryIterator *iter, void *context) {
   DashboardData data;
 
   Tuple *tuple = dict_find(iter, KEY_RESET_DATA);
   if(tuple){
-    dashboard_data_reset();
+    for(int i=0; i<user_data.stations_count; i++){
+      station_data_destroy(user_data.stations[i]);
+    }
+    user_data.stations_count = 0;
+    for(int i=0; i<tuple->length; i+=40){
+      user_data.stations[user_data.stations_count] = station_data_create((char*)(&tuple->value->uint8 + i));
+      user_data.stations_count++;
+    }
   }
 
   tuple = dict_find(iter, KEY_DASHBOARD_DATA);
   if(tuple){
-    memcpy(&data,&tuple->value->uint8,tuple->length);
-    if(data.type == NAModule1){
-      dashboard_data_set_outdoor(data);
-    }
-    else {
-      dashboard_data_add(data);
-    } 
+    uint16_t stationId = tuple->value->uint16;
+    memcpy(&data,&tuple->value->uint8 + 2,tuple->length - 2);
+    station_data_add_module_data(user_data.stations[stationId], &data);
   }
 
   tuple = dict_find(iter, KEY_ERROR);
@@ -38,8 +43,8 @@ static void cb_in_received_handler(DictionaryIterator *iter, void *context) {
 }
 
 int main(void) {
-
-  show_main_window();
+  user_data.stations_count = 0;
+  show_main_window(&user_data);
 
   app_message_register_inbox_received(cb_in_received_handler);
   app_message_open(app_message_inbox_size_maximum(), 0);
@@ -47,4 +52,8 @@ int main(void) {
   app_event_loop();
 
   app_message_deregister_callbacks();
+
+  for(int i=0; i<user_data.stations_count; i++){
+    station_data_destroy(user_data.stations[i]);
+  }
 }
