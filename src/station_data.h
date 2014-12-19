@@ -4,9 +4,10 @@
 #include "dashboard_data.h"
 
 #define MAXIMUM_MODULES 7
+#define STATION_NAME_MAX_LENGTH 40
 
 typedef struct StationData {
-	char			name[40];
+	char			name[STATION_NAME_MAX_LENGTH];
 	DashboardData*	modules_dashboard[MAXIMUM_MODULES];
 	uint8_t			modules_count;
 } StationData;

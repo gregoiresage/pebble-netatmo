@@ -1,5 +1,7 @@
 #include <pebble.h>
 #include "dashboard_data.h"
+#include "station_data.h"
+#include "user_data.h"
 #include "main_window.h"
 
 #define KEY_DASHBOARD_DATA  0
@@ -17,7 +19,7 @@ static void cb_in_received_handler(DictionaryIterator *iter, void *context) {
       station_data_destroy(user_data.stations[i]);
     }
     user_data.stations_count = 0;
-    for(int i=0; i<tuple->length; i+=40){
+    for(int i=0; i<tuple->length && user_data.stations_count < MAXIMUM_STATIONS; i+=STATION_NAME_MAX_LENGTH){
       user_data.stations[user_data.stations_count] = station_data_create((char*)(&tuple->value->uint8 + i));
       user_data.stations_count++;
     }
@@ -28,6 +30,7 @@ static void cb_in_received_handler(DictionaryIterator *iter, void *context) {
     uint16_t stationId = tuple->value->uint16;
     memcpy(&data,&tuple->value->uint8 + 2,tuple->length - 2);
     station_data_add_module_data(user_data.stations[stationId], &data);
+    refresh_window(stationId);
   }
 
   tuple = dict_find(iter, KEY_ERROR);
@@ -38,8 +41,6 @@ static void cb_in_received_handler(DictionaryIterator *iter, void *context) {
   else {
     setError(0);
   }
-
-  refresh_window();
 }
 
 int main(void) {

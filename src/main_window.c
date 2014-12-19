@@ -17,12 +17,12 @@ static PropertyAnimation *prop_animation;
 #define TOP     0
 #define BOTTOM  1
 #define MIDDLE  2
-static int layout = MIDDLE;
+static uint8_t layout = MIDDLE;
 
 static UserData* user_data;
 
-static int current_station = 0;
-static int current_module_in_station = -1;
+static uint8_t current_station = 0;
+static uint8_t current_module_in_station = 0;
 
 static GBitmap *image_error;
 static char text_error[20] = "";
@@ -107,7 +107,7 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
 
   if(layout == MIDDLE && station_data_get_module_count(user_data->stations[current_station]) > 1){
     if(displayNextModule())
-      refresh_window();
+      refresh_window(current_station);
   }
   else if(layout == BOTTOM){
     dashboard_layer_switch_graph(s_bottom_layer);
@@ -124,7 +124,7 @@ static void select_long_click_handler(ClickRecognizerRef recognizer, void *conte
   if(layout == MIDDLE && user_data->stations_count > 1){
     current_station = (current_station + 1) % (user_data->stations_count);
     current_module_in_station = 0;
-    refresh_window();
+    refresh_window(current_station);
   }
 }
 
@@ -223,11 +223,14 @@ static DashboardData* get_outdoor_data(StationData* station_data){
   return outdoor_dashboard;
 }
 
-void refresh_window(void){
-  APP_LOG(APP_LOG_LEVEL_INFO, "refresh_window %d", current_module_in_station);
-  dashboard_layer_update_data(s_top_layer,    get_outdoor_data(user_data->stations[current_station]));
-  if(current_module_in_station == -1)
-    displayNextModule();
-  dashboard_layer_update_data(s_bottom_layer, station_data_get_module_data(user_data->stations[current_station], current_module_in_station));
+void refresh_window(uint8_t station_id){
+  if(station_id == current_station){
+    dashboard_layer_update_data(s_top_layer, get_outdoor_data(user_data->stations[current_station]));
+    // if the current_module_in_station is the outdoor module, we look for the next available module
+    if(user_data->stations[current_station]->modules_dashboard[current_module_in_station]->type == NAModule1){
+      displayNextModule();
+    }
+    dashboard_layer_update_data(s_bottom_layer, station_data_get_module_data(user_data->stations[current_station], current_module_in_station));
+  }
 }
 
