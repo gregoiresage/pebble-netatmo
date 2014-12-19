@@ -217,6 +217,7 @@ static DashboardData* get_outdoor_data(StationData* station_data){
       indoor_dashboard = station_data->modules_dashboard[i];
   }
   if(outdoor_dashboard && indoor_dashboard){
+    outdoor_dashboard->pressure = indoor_dashboard->pressure;
     memcpy(outdoor_dashboard->data_pressure, indoor_dashboard->data_pressure, 24 * sizeof(int16_t));
   }
   return outdoor_dashboard;
