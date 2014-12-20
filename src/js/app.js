@@ -42,6 +42,7 @@ function read(){
 
   // access_token = null;
   // refresh_token = null;
+  // main_device = null;
 
   console.log("read " + access_token + " "+ expires_in + " "+ refresh_token + " " + main_device + " " + units_metric);
 }
@@ -118,7 +119,7 @@ function fetchData(){
     return renewToken(function() { fetchData() });
 
   var req = new XMLHttpRequest();
-  var url = 'https://api.netatmo.net/api/devicelist?access_token=' + encodeURIComponent(access_token) + '&device_id=' + encodeURIComponent(main_device);
+  var url = 'https://api.netatmo.net/api/devicelist?access_token=' + encodeURIComponent(access_token);
   console.log(url);
   sendRequest(url, "GET", 
   function(e) {
@@ -137,9 +138,6 @@ function fetchData(){
         names[names.length]           = toUTF8Array(result.body.devices[i].station_name, 40);
       }
     }
-
-    // names[1] = toUTF8Array(result.body.devices[0].station_name, 40);
-    // device_ids[1] = main_device;
 
     var names_arr = [];
     for(var i = 0; i<names.length; i++)
