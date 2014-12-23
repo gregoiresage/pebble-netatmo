@@ -157,12 +157,20 @@ void dashboard_layer_update_data(DashboardLayer *dashboard_layer, DashboardData 
 		snprintf(dashboard_layer->text_name, sizeof(dashboard_layer->text_name), "%s", dashboard_data->name);
 	
 		if(dashboard_data->type == NAMain || dashboard_data->type == NAModule4){
-			snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), "%d.%d°", dashboard_data->temperature/10, abs(dashboard_data->temperature)%10);
+			snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), 
+				"%s%d.%d°", 
+				dashboard_data->temperature/10 == 0 && dashboard_data->temperature < 0 ? "-" : "",
+				dashboard_data->temperature/10, 
+				abs(dashboard_data->temperature)%10);
 			snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "%d%%  %dppm", dashboard_data->humidity, dashboard_data->co2);
 			dashboard_layer->dashboard_data.displayed_measure = Temperature;
 		}
 		else if(dashboard_data->type == NAModule1){
-			snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), "%d.%d°", dashboard_data->temperature/10, abs(dashboard_data->temperature)%10);
+			snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), 
+				"%s%d.%d°", 
+				dashboard_data->temperature/10 == 0 && dashboard_data->temperature < 0 ? "-" : "",
+				dashboard_data->temperature/10, 
+				abs(dashboard_data->temperature)%10);
 			snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "%d%% %d.%dmb", dashboard_data->humidity, dashboard_data->pressure/10, dashboard_data->pressure%10);
 			dashboard_layer->dashboard_data.displayed_measure = Temperature;
 		}
