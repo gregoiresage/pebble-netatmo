@@ -118,8 +118,17 @@ static void dashboard_layer_animate_graph(DashboardLayer *dashboard_layer){
 
 	switch(displayed_measure){
 		case Temperature : 	
-			snprintf(title, sizeof(title), "Temperature : %d.%d °", dashboard_layer->dashboard_data.temperature/10,abs(dashboard_layer->dashboard_data.temperature)%10);
-			snprintf(legend, sizeof(legend), "%d.%d / %d.%d (°)", minimum/10,abs(minimum)%10,maximum/10,abs(maximum)%10); break;
+			snprintf(title, sizeof(title), "Temperature : %s%d.%d °", 
+				dashboard_layer->dashboard_data.temperature/10 == 0 && dashboard_layer->dashboard_data.temperature < 0 ? "-" : "",
+				dashboard_layer->dashboard_data.temperature/10,
+				abs(dashboard_layer->dashboard_data.temperature)%10);
+			snprintf(legend, sizeof(legend), "%s%d.%d / %s%d.%d (°)", 
+				minimum/10 == 0 && minimum < 0 ? "-" : "",
+				minimum/10,
+				abs(minimum)%10,
+				maximum == 0 && maximum < 0 ? "-" : "",
+				maximum/10,
+				abs(maximum)%10); break;
 		case Humidity : 	
 			snprintf(title, sizeof(title), "Humidity : %d %%", dashboard_layer->dashboard_data.humidity); 
 			snprintf(legend, sizeof(legend), "%d / %d (%%)", minimum,maximum); break;
