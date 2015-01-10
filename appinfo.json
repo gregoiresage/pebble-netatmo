@@ -23,6 +23,11 @@
         "type": "png",
         "name": "IMAGE_ERROR",
         "file": "images/high-importance-64.png"
+      },
+      {
+        "type": "png",
+        "name": "IMAGE_SPLASH",
+        "file": "images/splash.png"
       }
     ]
   }

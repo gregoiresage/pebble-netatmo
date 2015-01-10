@@ -3,6 +3,7 @@
 #include "station_data.h"
 #include "user_data.h"
 #include "main_window.h"
+#include "splash_window.h"
 
 #define KEY_DASHBOARD_DATA  0
 #define KEY_RESET_DATA      1
@@ -31,12 +32,14 @@ static void cb_in_received_handler(DictionaryIterator *iter, void *context) {
     memcpy(&data,&tuple->value->uint8 + 2,tuple->length - 2);
     station_data_add_module_data(user_data.stations[stationId], &data);
     refresh_window(stationId);
+    hide_splash_window();
   }
 
   tuple = dict_find(iter, KEY_ERROR);
   if(tuple){
     APP_LOG(APP_LOG_LEVEL_INFO, "Error %s", tuple->value->cstring);
     setError(tuple->value->cstring);
+    hide_splash_window();
   }
   else {
     setError(0);
@@ -46,6 +49,7 @@ static void cb_in_received_handler(DictionaryIterator *iter, void *context) {
 int main(void) {
   user_data.stations_count = 0;
   show_main_window(&user_data);
+  show_splash_window();
 
   app_message_register_inbox_received(cb_in_received_handler);
   app_message_open(app_message_inbox_size_maximum(), 0);
