@@ -27,7 +27,7 @@ DashboardLayer* dashboard_layer_create(GRect frame, GColor bgColor){
 	DashboardLayer* dashboard_layer = malloc(sizeof(DashboardLayer));
 
 	dashboard_layer->bgColor = bgColor;
-	dashboard_layer->fgColor = bgColor == GColorBlack ? GColorWhite : GColorBlack;
+	dashboard_layer->fgColor = gcolor_equal(bgColor,GColorBlack) ? GColorWhite : GColorBlack;
 
 	dashboard_layer->s_res_bitham_42_light 	= fonts_get_system_font(FONT_KEY_BITHAM_42_LIGHT);
 	dashboard_layer->s_res_gothic_18_bold 	= fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);

@@ -162,7 +162,9 @@ static void initialise_ui(void) {
   image_error = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_ERROR);
 
   s_window = window_create();
+#ifdef PBL_SDK_2
   window_set_fullscreen(s_window, true);
+#endif
   window_set_click_config_provider(s_window, click_config_provider);
 
   s_top_layer = dashboard_layer_create(GRect(0, 0, 144, 168), GColorWhite);

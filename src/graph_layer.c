@@ -94,9 +94,13 @@ Layer* graph_layer_get_layer(GraphLayer *graph_layer){
 	return graph_layer->layer;
 }
 
-void animationUpdate(struct Animation *animation, const uint32_t time_normalized){
+#ifdef PBL_COLOR
+static void animationUpdate(Animation *animation, const AnimationProgress progress) {
+#else
+static void animationUpdate(Animation *animation, const uint32_t progress) {
+#endif
 	GraphLayer *graph_layer = (GraphLayer *)animation_get_context(animation);
-	graph_layer->percent = time_normalized * 100 / ANIMATION_NORMALIZED_MAX;
+	graph_layer->percent = progress * 100 / ANIMATION_NORMALIZED_MAX;
 	layer_mark_dirty(graph_layer->layer);
 }
 
@@ -119,16 +123,6 @@ GraphLayer* graph_layer_create(GRect frame, GColor fgColor){
 	graph_layer->layer = layer_create_with_data(frame, sizeof(GraphLayer*));
 	layer_set_update_proc(graph_layer->layer, layer_update_callback);
 	memcpy(layer_get_data(graph_layer->layer), &graph_layer, sizeof(GraphLayer*));
-
-	graph_layer->animation = animation_create();
-	graph_layer->animImpl.update = animationUpdate;
-	animation_set_handlers(graph_layer->animation, (AnimationHandlers) {
-		.started = (AnimationStartedHandler) animation_started,
-		.stopped = (AnimationStoppedHandler) animation_stopped,
-	}, graph_layer);
-
-	animation_set_duration(graph_layer->animation, 800);
-	animation_set_implementation(graph_layer->animation, &(graph_layer->animImpl));
 
 	return graph_layer;
 }
@@ -159,5 +153,15 @@ void graph_layer_animate_to(GraphLayer *graph_layer, char* title, char* legend, 
 			graph_layer->minimum = value;
 	}
 	graph_layer->percent = 0;
+
+	graph_layer->animation = animation_create();
+	graph_layer->animImpl.update = animationUpdate;
+	animation_set_handlers(graph_layer->animation, (AnimationHandlers) {
+		.started = (AnimationStartedHandler) animation_started,
+		.stopped = (AnimationStoppedHandler) animation_stopped,
+	}, graph_layer);
+
+	animation_set_duration(graph_layer->animation, 800);
+	animation_set_implementation(graph_layer->animation, &(graph_layer->animImpl));
 	animation_schedule(graph_layer->animation);
 }

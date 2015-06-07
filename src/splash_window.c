@@ -25,7 +25,9 @@ static void initialise_ui(void) {
 
   s_window = window_create();
   window_set_background_color(s_window, GColorBlack);
+#ifdef PBL_SDK_2
   window_set_fullscreen(s_window, true);
+#endif
 
   s_image_layer = bitmap_layer_create(GRect(0, (168 - 101) / 2, 144, 101));
   bitmap_layer_set_bitmap(s_image_layer,image_splash);
