@@ -80,6 +80,9 @@ Pebble.addEventListener('showConfiguration', function(e) {
   if(refresh_token !== null){
     uri += "?refresh_token=" + encodeURIComponent(refresh_token) + "&pebble_token=" + encodeURIComponent(Pebble.getAccountToken());
   }
+  else {
+    uri += "auth";
+  }
   console.log('showConfiguration ' + uri);
   Pebble.openURL(uri);
 });
