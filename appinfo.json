@@ -13,9 +13,8 @@
   ],
   "appKeys": {
     "dashboard_data": 0,
-    "reset_data":     1,
-
-    "error" : 1000
+    "reset_data": 1,
+    "error": 1000
   },
   "resources": {
     "media": [
@@ -30,5 +29,10 @@
         "file": "images/splash.png"
       }
     ]
-  }
+  },
+  "targetPlatforms": [
+    "aplite",
+    "basalt"
+  ],
+  "sdkVersion": "3"
 }
