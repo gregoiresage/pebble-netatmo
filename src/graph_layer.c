@@ -141,8 +141,8 @@ void graph_layer_animate_to(GraphLayer *graph_layer, char* title, char* legend, 
 	memcpy(graph_layer->title, title, sizeof(graph_layer->title));
 	memcpy(graph_layer->legend, legend, sizeof(graph_layer->legend));
 	memcpy(graph_layer->data, data, sizeof(graph_layer->data));
-	graph_layer->maximum = -32000;
-	graph_layer->minimum = 32000;
+	graph_layer->maximum = INT16_MIN;
+	graph_layer->minimum = INT16_MAX;
 	int16_t value = 0;
 	for(size_t i=0; i<24; i++){
 		value = graph_layer->data[i];
