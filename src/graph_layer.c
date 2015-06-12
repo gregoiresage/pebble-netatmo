@@ -38,6 +38,9 @@ static void layer_update_callback(Layer *me, GContext* ctx) {
 	}
 
 	graphics_context_set_fill_color(ctx, graph_layer->fgColor);
+	
+	time_t now = time(NULL);
+    struct tm *current_time = localtime(&now);
 
 	int16_t data = 0;
 	uint16_t height = 0;
@@ -67,26 +70,28 @@ static void layer_update_callback(Layer *me, GContext* ctx) {
 			start = startY;
 		}
 
+#ifdef PBL_COLOR
+		graphics_context_set_fill_color(ctx, 23 - current_time->tm_hour - i ? graph_layer->fgColor : GColorRed);
+#endif
 		graphics_fill_rect(ctx, GRect(x_min + i*(4+1), start, 2, height), 0, GCornersAll);
-
 	}
 
 	graphics_context_set_text_color(ctx, graph_layer->fgColor);
 
 	graphics_draw_text(ctx,
-      graph_layer->title,
+      graph_layer->max,
       fonts_get_system_font(FONT_KEY_FONT_FALLBACK),
       GRect(0, 0, layer_bounds.size.w, 20),
       GTextOverflowModeWordWrap,
-      GTextAlignmentCenter,
+      GTextAlignmentLeft,
       NULL);
 
 	graphics_draw_text(ctx,
-      graph_layer->legend,
+      graph_layer->min,
       fonts_get_system_font(FONT_KEY_FONT_FALLBACK),
       GRect(0, layer_bounds.size.h - 16, layer_bounds.size.w, 15),
       GTextOverflowModeWordWrap,
-      GTextAlignmentCenter,
+      GTextAlignmentLeft,
       NULL);
 }
 
@@ -110,14 +115,19 @@ static void animation_started(Animation *animation, void *data) {
 	layer_mark_dirty(graph_layer->layer);
 }
 
-void animation_stopped(Animation *animation, bool finished, void *data) {
+static void animation_stopped(Animation *animation, bool finished, void *data) {
 	GraphLayer *graph_layer = (GraphLayer *)data;
 	graph_layer->percent = 100;
 	layer_mark_dirty(graph_layer->layer);
+#ifndef PBL_SDK_3
+	animation_destroy(animation);
+	graph_layer->animation = NULL;
+#endif
 }
 
 GraphLayer* graph_layer_create(GRect frame, GColor fgColor){
 	GraphLayer* graph_layer = malloc(sizeof(GraphLayer));
+	memset(graph_layer, 0, sizeof(GraphLayer));
 	graph_layer->fgColor = fgColor;
 
 	graph_layer->layer = layer_create_with_data(frame, sizeof(GraphLayer*));
@@ -137,9 +147,9 @@ void graph_layer_destroy(GraphLayer *graph_layer){
 }
 
 
-void graph_layer_animate_to(GraphLayer *graph_layer, char* title, char* legend, int16_t *data){
-	memcpy(graph_layer->title, title, sizeof(graph_layer->title));
-	memcpy(graph_layer->legend, legend, sizeof(graph_layer->legend));
+void graph_layer_animate_to(GraphLayer *graph_layer, char* max, char* min, int16_t *data){
+	memcpy(graph_layer->max, max, sizeof(graph_layer->max));
+	memcpy(graph_layer->min, min, sizeof(graph_layer->min));
 	memcpy(graph_layer->data, data, sizeof(graph_layer->data));
 	graph_layer->maximum = INT16_MIN;
 	graph_layer->minimum = INT16_MAX;

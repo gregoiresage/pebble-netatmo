@@ -29,8 +29,11 @@ DashboardLayer* dashboard_layer_create(GRect frame, GColor bgColor){
 	dashboard_layer->bgColor = bgColor;
 	dashboard_layer->fgColor = gcolor_equal(bgColor,GColorBlack) ? GColorWhite : GColorBlack;
 
-	dashboard_layer->s_res_bitham_42_light 	= fonts_get_system_font(FONT_KEY_BITHAM_42_LIGHT);
-	dashboard_layer->s_res_gothic_18_bold 	= fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
+#ifdef PBL_SDK_3
+	dashboard_layer->main_font = fonts_get_system_font(FONT_KEY_LECO_36_BOLD_NUMBERS);
+#else
+	dashboard_layer->main_font = fonts_get_system_font(FONT_KEY_BITHAM_42_LIGHT);
+#endif
 
 	resetDisplay(dashboard_layer);
 	
@@ -40,30 +43,34 @@ DashboardLayer* dashboard_layer_create(GRect frame, GColor bgColor){
 	memcpy(layer_get_data(dashboard_layer->s_background), &dashboard_layer, sizeof(DashboardLayer*));
 	
 	// s_name
-	dashboard_layer->s_name = text_layer_create(GRect(0, 2, 144, 20));
+	dashboard_layer->s_name = text_layer_create(GRect(0, 4, 144, 20));
 	text_layer_set_background_color(dashboard_layer->s_name, GColorClear);
-	text_layer_set_font(dashboard_layer->s_name, fonts_get_system_font(FONT_KEY_FONT_FALLBACK));
+	text_layer_set_font(dashboard_layer->s_name, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
 	text_layer_set_text_color(dashboard_layer->s_name, dashboard_layer->fgColor);
 	text_layer_set_text(dashboard_layer->s_name, dashboard_layer->text_name);
 	text_layer_set_text_alignment(dashboard_layer->s_name, GTextAlignmentCenter);
 	layer_add_child(dashboard_layer->s_background, text_layer_get_layer(dashboard_layer->s_name));
 	
 	// s_main
-	dashboard_layer->s_main = text_layer_create(GRect(0, 12, 144, 45));
+#ifdef PBL_SDK_3
+	dashboard_layer->s_main = text_layer_create(GRect(0, 19, 144, 45));
+#else
+	dashboard_layer->s_main = text_layer_create(GRect(0, 15, 144, 45));
+#endif
+	text_layer_set_font(dashboard_layer->s_main, dashboard_layer->main_font);
 	text_layer_set_background_color(dashboard_layer->s_main, GColorClear);
 	text_layer_set_text_color(dashboard_layer->s_main, dashboard_layer->fgColor);
 	text_layer_set_text(dashboard_layer->s_main, dashboard_layer->text_main);
 	text_layer_set_text_alignment(dashboard_layer->s_main, GTextAlignmentCenter);
-	text_layer_set_font(dashboard_layer->s_main, dashboard_layer->s_res_bitham_42_light);
 	layer_add_child(dashboard_layer->s_background, text_layer_get_layer(dashboard_layer->s_main));
 
 	// s_subtitle
-	dashboard_layer->s_subtitle = text_layer_create(GRect(0, 57, 144, 27));
+	dashboard_layer->s_subtitle = text_layer_create(GRect(0, 60, 144, 27));
 	text_layer_set_background_color(dashboard_layer->s_subtitle, GColorClear);
 	text_layer_set_text_color(dashboard_layer->s_subtitle, dashboard_layer->fgColor);
 	text_layer_set_text(dashboard_layer->s_subtitle, dashboard_layer->text_subtitle);
 	text_layer_set_text_alignment(dashboard_layer->s_subtitle, GTextAlignmentCenter);
-	text_layer_set_font(dashboard_layer->s_subtitle, dashboard_layer->s_res_gothic_18_bold);
+	text_layer_set_font(dashboard_layer->s_subtitle, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
 	layer_add_child(dashboard_layer->s_background, text_layer_get_layer(dashboard_layer->s_subtitle));
 
 	// s_graph_layer
@@ -86,10 +93,52 @@ Layer* dashboard_layer_get_layer(DashboardLayer *dashboard_layer){
 	return dashboard_layer->s_background;
 }
 
+#ifdef PBL_COLOR
+static void animationUpdate(Animation *animation, const AnimationProgress progress) {
+#else
+static void animationUpdate(Animation *animation, const uint32_t progress) {
+#endif
+	DashboardLayer *dashboard_layer = (DashboardLayer *)animation_get_context(animation);
+	int percent = progress * 100 / ANIMATION_NORMALIZED_MAX;
+	DashboardData dashboard_data = dashboard_layer->dashboard_data;
+
+	MeasureType displayed_measure = dashboard_data.displayed_measure;
+	switch(dashboard_data.displayed_measure){
+		case Temperature: 	
+			;
+			int16_t temperature = dashboard_data.temperature*percent/100;
+			snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), 
+				"%s%d.%d°", 
+				temperature/10 == 0 && temperature < 0 ? "-" : "",
+				temperature/10, 
+				abs(temperature)%10);
+			break;
+		case Humidity:		
+			snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), 
+				"%d", dashboard_data.humidity*percent/100);break;
+		case CO2:			
+			snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), 
+				"%d", dashboard_data.co2*percent/100);break;
+		case Noise:			
+			snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), 
+				"%d", dashboard_data.noise*percent/100);break;
+		case Pressure:
+			;	
+			uint16_t pressure = dashboard_data.pressure*percent/100;
+			snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), 
+				"%d.%d", pressure/10, pressure%10);break;
+		case Rain:
+			;	
+			uint16_t rain = dashboard_data.rain*percent/100;
+			snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), 
+				"%d.%03d", rain/1000, rain%1000); break;
+	}
+}
+
 static void dashboard_layer_animate_graph(DashboardLayer *dashboard_layer){
 	MeasureType displayed_measure = dashboard_layer->dashboard_data.displayed_measure;
-	char title[40] = "";
-	char legend[40] = "";
+	char max_t[20] = "";
+	char min_t[20] = "";
 	int16_t *data = NULL; 
 	switch(displayed_measure){
 		case Temperature : 	
@@ -107,8 +156,8 @@ static void dashboard_layer_animate_graph(DashboardLayer *dashboard_layer){
 		default : break;
 	}
 
-	int16_t maximum = -32000;
-	int16_t minimum =  32000;
+	int16_t maximum = INT16_MIN;
+	int16_t minimum =  INT16_MAX;
 	for(size_t i=0; i<24; i++){
 		if(data[i] > maximum)
 			maximum = data[i];
@@ -118,36 +167,36 @@ static void dashboard_layer_animate_graph(DashboardLayer *dashboard_layer){
 
 	switch(displayed_measure){
 		case Temperature : 	
-			snprintf(title, sizeof(title), "Temperature : %s%d.%d °", 
-				dashboard_layer->dashboard_data.temperature/10 == 0 && dashboard_layer->dashboard_data.temperature < 0 ? "-" : "",
-				dashboard_layer->dashboard_data.temperature/10,
-				abs(dashboard_layer->dashboard_data.temperature)%10);
-			snprintf(legend, sizeof(legend), "%s%d.%d / %s%d.%d (°)", 
-				minimum/10 == 0 && minimum < 0 ? "-" : "",
-				minimum/10,
-				abs(minimum)%10,
+			snprintf(max_t, sizeof(max_t), "%s%d.%d °", 
 				maximum == 0 && maximum < 0 ? "-" : "",
 				maximum/10,
-				abs(maximum)%10); break;
+				abs(maximum)%10);
+			snprintf(min_t, sizeof(min_t), "%s%d.%d °", 
+				minimum/10 == 0 && minimum < 0 ? "-" : "",
+				minimum/10,
+				abs(minimum)%10); 
+			break;
 		case Humidity : 	
-			snprintf(title, sizeof(title), "Humidity : %d %%", dashboard_layer->dashboard_data.humidity); 
-			snprintf(legend, sizeof(legend), "%d / %d (%%)", minimum,maximum); break;
+			snprintf(max_t, sizeof(max_t), "%d %%", maximum); 
+			snprintf(min_t, sizeof(min_t), "%d %%", minimum); 
+			break;
 		case Pressure : 	
-			snprintf(title, sizeof(title), "Pressure : %d.%d mb", dashboard_layer->dashboard_data.pressure/10,dashboard_layer->dashboard_data.pressure%10);
-			snprintf(legend, sizeof(legend), "%d.%d / %d.%d (mb)", minimum/10,minimum%10,maximum/10,maximum%10); break;
-		case CO2 : 			
-			snprintf(title, sizeof(title), "CO² : %d ppm", dashboard_layer->dashboard_data.co2);
-			snprintf(legend, sizeof(legend), "%d / %d (ppm)", minimum,maximum); break;
+			snprintf(max_t, sizeof(max_t), "%d.%d mb", maximum/10,maximum%10); 
+			snprintf(min_t, sizeof(min_t), "%d.%d mb", minimum/10,minimum%10); 
+			break;
+		case CO2 : 
+			snprintf(max_t, sizeof(max_t), "%d ppm", maximum); 
+			snprintf(min_t, sizeof(min_t), "%d ppm", minimum); break;
 		case Noise : 		
-			snprintf(title, sizeof(title), "Noise : %d dB", dashboard_layer->dashboard_data.noise);
-			snprintf(legend, sizeof(legend), "%d / %d (dB)", minimum,maximum); break;
+			snprintf(max_t, sizeof(max_t), "%d dB", maximum); 
+			snprintf(min_t, sizeof(min_t), "%d dB", minimum); break;
 		case Rain : 		
-			snprintf(title, sizeof(title), "Rain : %d.%03d mm", dashboard_layer->dashboard_data.rain/1000,dashboard_layer->dashboard_data.rain%1000);
-			snprintf(legend, sizeof(legend), "%d.%03d / %d.%03d (mm)", minimum/1000,minimum%1000,maximum/1000,maximum%1000); break;
+			snprintf(max_t, sizeof(max_t), "%d.%03d mm", maximum/1000,maximum%1000); 
+			snprintf(min_t, sizeof(min_t), "%d.%03d mm", minimum/1000,minimum%1000); break;
 		default : break;
 	}
 
-	graph_layer_animate_to(dashboard_layer->s_graph_layer, title, legend, data);
+	graph_layer_animate_to(dashboard_layer->s_graph_layer, max_t, min_t, data);
 }
 
 void dashboard_layer_update_data(DashboardLayer *dashboard_layer, DashboardData *dashboard_data){
@@ -194,10 +243,16 @@ void dashboard_layer_update_data(DashboardLayer *dashboard_layer, DashboardData 
 	layer_mark_dirty(dashboard_layer->s_background);
 }
 
+static void animation_stopped(Animation *animation, bool finished, void *data) {
+#ifndef PBL_SDK_3
+	animation_destroy(animation);
+#endif
+}
+
 void dashboard_layer_switch_graph(DashboardLayer *dashboard_layer){
-	ModuleType type = dashboard_layer->dashboard_data.type;
-	MeasureType displayed_measure = dashboard_layer->dashboard_data.displayed_measure;
-	switch(type){
+	DashboardData dashboard_data 	= dashboard_layer->dashboard_data;
+	MeasureType displayed_measure 	= dashboard_data.displayed_measure;
+	switch(dashboard_data.type){
 		case NAMain :
 			switch(displayed_measure){
 				case Temperature : 	displayed_measure = Humidity; break;
@@ -227,12 +282,50 @@ void dashboard_layer_switch_graph(DashboardLayer *dashboard_layer){
 			break;
 	}
 
-	if(dashboard_layer->dashboard_data.displayed_measure != displayed_measure){
+	if(dashboard_layer->dashboard_data.displayed_measure != displayed_measure)
+	{
 		dashboard_layer->dashboard_data.displayed_measure = displayed_measure;
+
+		switch(displayed_measure){
+			case Temperature: 	
+				snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "Temperature (°)"); 
+				break;
+			case Humidity:		
+				snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "Humidity (%%)"); break;
+			case CO2:			
+				snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "CO² (ppm)"); break;
+			case Noise:			
+				snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "Noise (dB)"); break;
+			case Pressure:		
+				snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "Pressure (mb)"); break;
+			case Rain:			
+				snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "Rain (mm)"); break;
+			default:	
+				snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), 
+					"000");		
+				snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "---"); break;
+		}
+
+		dashboard_layer->animation = animation_create();
+		dashboard_layer->animImpl.update = animationUpdate;
+		animation_set_handlers(dashboard_layer->animation, (AnimationHandlers) {
+			.stopped = animation_stopped,
+		}, dashboard_layer);
+
+		animation_set_duration(dashboard_layer->animation, 500);
+		animation_set_implementation(dashboard_layer->animation, &(dashboard_layer->animImpl));
+		animation_schedule(dashboard_layer->animation);
+
 		dashboard_layer_animate_graph(dashboard_layer);
 	}	
 }
 
 void dashboard_layer_set_graph_hidden(DashboardLayer *dashboard_layer, bool hidden){
+	if(hidden){
+		dashboard_layer_update_data(dashboard_layer, &dashboard_layer->dashboard_data);
+	}
+	else {
+		dashboard_layer_switch_graph(dashboard_layer);
+	}
 	layer_set_hidden(graph_layer_get_layer(dashboard_layer->s_graph_layer),hidden);
 }

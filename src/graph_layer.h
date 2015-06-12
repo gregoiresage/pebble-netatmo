@@ -10,8 +10,8 @@ typedef struct {
 	Animation* animation;
 	AnimationImplementation animImpl;
 
-	char 	title[40];
-	char 	legend[40];
+	char 	min[20];
+	char 	max[20];
 
 	int16_t data[24];
 	int16_t minimum;

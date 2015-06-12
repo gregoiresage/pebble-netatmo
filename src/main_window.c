@@ -43,8 +43,10 @@ static void destroy_property_animation(PropertyAnimation **prop_animation) {
     animation_unschedule((Animation*) *prop_animation);
   }
 
+#ifndef PBL_SDK_3
   property_animation_destroy(*prop_animation);
   *prop_animation = NULL;
+#endif
 }
 
 static void animate(bool toUp){
@@ -167,7 +169,11 @@ static void initialise_ui(void) {
 #endif
   window_set_click_config_provider(s_window, click_config_provider);
 
+#ifdef PBL_COLOR
+  s_top_layer = dashboard_layer_create(GRect(0, 0, 144, 168), GColorCadetBlue);
+#else
   s_top_layer = dashboard_layer_create(GRect(0, 0, 144, 168), GColorWhite);
+#endif
   dashboard_layer_set_graph_hidden(s_top_layer, true);
   layer_add_child(window_get_root_layer(s_window), dashboard_layer_get_layer(s_top_layer));
 

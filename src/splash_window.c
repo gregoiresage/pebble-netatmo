@@ -40,7 +40,11 @@ static void initialise_ui(void) {
   text_layer_set_font(s_version_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
   text_layer_set_text_alignment(s_version_layer, GTextAlignmentRight);
   text_layer_set_background_color(s_version_layer,GColorClear);
+#ifdef PBL_COLOR
+  text_layer_set_text_color(s_version_layer,GColorCadetBlue);
+#else
   text_layer_set_text_color(s_version_layer,GColorWhite);
+#endif
   layer_add_child(window_get_root_layer(s_window), text_layer_get_layer(s_version_layer));
 
   timer = app_timer_register(2000 /* milliseconds */, timer_callback, NULL);

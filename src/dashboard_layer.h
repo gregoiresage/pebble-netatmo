@@ -5,8 +5,9 @@
 #include "graph_layer.h"
 
 typedef struct DashboardLayer {
-	GFont s_res_bitham_42_light;
-	GFont s_res_gothic_18_bold;
+	GFont main_font;
+	// GFont s_res_gothic_18_bold;
+	// GFont s_res_gothic_14_bold;
 
 	GColor bgColor;
 	GColor fgColor;
@@ -22,6 +23,9 @@ typedef struct DashboardLayer {
 	TextLayer 	*s_name;
 	TextLayer 	*s_main;
 	TextLayer 	*s_subtitle;
+
+	Animation* animation;
+	AnimationImplementation animImpl;
 	
 	GraphLayer *s_graph_layer;
 } DashboardLayer;
