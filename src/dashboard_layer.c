@@ -270,6 +270,12 @@ void dashboard_layer_switch_graph(DashboardLayer *dashboard_layer){
 				default : break;
 			}
 			break;
+		case NAModule3 :
+			switch(displayed_measure){
+				case Rain : 		dashboard_layer->dashboard_data.displayed_measure = Temperature; displayed_measure = Rain; break;
+				default : break;
+			}
+			break;
 		case NAModule4 :
 			switch(displayed_measure){
 				case Temperature : 	displayed_measure = Humidity; break;
@@ -301,8 +307,7 @@ void dashboard_layer_switch_graph(DashboardLayer *dashboard_layer){
 			case Rain:			
 				snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "Rain (mm)"); break;
 			default:	
-				snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), 
-					"000");		
+				snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), "000");		
 				snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "---"); break;
 		}
 
