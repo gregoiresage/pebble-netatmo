@@ -193,9 +193,6 @@ function fetchDataForDevices(device_ids){
     var url = 'https://api.netatmo.net/api/devicelist?access_token=' + encodeURIComponent(access_token) + '&device_id=' + encodeURIComponent(device_ids[d]);
     console.log(url);
     (function(id) {
-        // here the value of d was passed into as the argument id
-        // and will be captured in this function closure so each
-        // iteration of the loop can have it's own value
         sendRequest(url, "GET", 
         function(e) {
           var result = JSON.parse(e);
@@ -268,7 +265,7 @@ function fetchMeasures(id, device, modules, index){
         'Noise'       in dashboard_data ? dashboard_data.Noise       : 0,
         'CO2'         in dashboard_data ? dashboard_data.CO2         : 0,
         'Pressure'    in dashboard_data ? dashboard_data.Pressure    : 0,
-        'Rain'        in dashboard_data ? dashboard_data.Rain        : 0,
+        'sum_rain_24' in dashboard_data ? dashboard_data.sum_rain_24 : 0,
         result.body,
         startTimeSeconds);
 
