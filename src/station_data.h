@@ -3,7 +3,7 @@
 #include <pebble.h>
 #include "dashboard_data.h"
 
-#define MAXIMUM_MODULES 7
+#define MAXIMUM_MODULES 10
 #define STATION_NAME_MAX_LENGTH 40
 
 typedef struct StationData {

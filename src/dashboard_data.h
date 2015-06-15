@@ -8,7 +8,8 @@ typedef enum {
 	NAModule4,
 	NAModule3,
 	NAPlug,
-	NATherm1
+	NATherm1,
+	NAModule2,
 } ModuleType;
 
 typedef enum {
@@ -18,6 +19,10 @@ typedef enum {
 	CO2,
 	Pressure,
 	Rain,
+	WindStrength,
+	WindAngle,
+	GustStrength,
+	GustAngle,
 } MeasureType;
 
 typedef struct DashboardData {
@@ -32,6 +37,10 @@ typedef struct DashboardData {
 	uint16_t 	co2;
 	uint16_t 	pressure;
 	uint16_t 	rain;
+	uint16_t 	wind_strength;
+	uint16_t 	wind_angle;
+	uint16_t 	gust_strength;
+	uint16_t 	gust_angle;
 	
 	int16_t		data_temperature[24];
 	int16_t		data_co2[24];
@@ -39,6 +48,10 @@ typedef struct DashboardData {
 	int16_t		data_pressure[24];
 	int16_t		data_noise[24];
 	int16_t		data_rain[24];
+	int16_t		data_wind_strength[24];
+	int16_t		data_wind_angle[24];
+	int16_t		data_gust_strength[24];
+	int16_t		data_gust_angle[24];
 
 	MeasureType displayed_measure;
 

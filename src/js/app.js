@@ -243,7 +243,7 @@ function fetchMeasures(id, device, modules, index){
   var startUTCseconds = startTimeSeconds + n.getTimezoneOffset()*60;
 
   var req = new XMLHttpRequest();
-  var url = 'https://api.netatmo.net/api/getmeasure?access_token=' + encodeURIComponent(access_token) + '&device_id=' + encodeURIComponent(device._id) + '&type=Temperature,CO2,Humidity,Pressure,Noise,sum_rain&scale=1hour&limit=24&optimize=true&date_begin=' + startUTCseconds;
+  var url = 'https://api.netatmo.net/api/getmeasure?access_token=' + encodeURIComponent(access_token) + '&device_id=' + encodeURIComponent(device._id) + '&type=Temperature,CO2,Humidity,Pressure,Noise,sum_rain,WindStrength,WindAngle,GustStrength,GustAngle&scale=1hour&limit=24&optimize=true&date_begin=' + startUTCseconds;
   if(modules)
     url += '&module_id=' + encodeURIComponent(modules[index]._id);
   console.log(url);
@@ -266,6 +266,10 @@ function fetchMeasures(id, device, modules, index){
         'CO2'         in dashboard_data ? dashboard_data.CO2         : 0,
         'Pressure'    in dashboard_data ? dashboard_data.Pressure    : 0,
         'sum_rain_24' in dashboard_data ? dashboard_data.sum_rain_24 : 0,
+        'WindStrength'in dashboard_data ? dashboard_data.WindStrength: 0,
+        'WindAngle'   in dashboard_data ? dashboard_data.WindAngle   : 0,
+        'GustStrength'in dashboard_data ? dashboard_data.GustStrength: 0,
+        'GustAngle'   in dashboard_data ? dashboard_data.GustAngle   : 0,
         result.body,
         startTimeSeconds);
 
@@ -305,10 +309,11 @@ function moduleType(type){
   if(type == "NAModule3") return 3;
   if(type == "NAPlug")    return 4;
   if(type == "NATherm1")  return 5;
+  if(type == "NAModule2") return 6;
   return 0;
 }
 
-function fillDashBoardData(arr, station_id, type, name, temp, temp_min, temp_max, humidity, noise, co2, pressure, rain, measures, start_measure_time){
+function fillDashBoardData(arr, station_id, type, name, temp, temp_min, temp_max, humidity, noise, co2, pressure, rain, wind_strength, wind_angle, gust_strength, gust_angle, measures, start_measure_time){
   pushUInt16(arr, station_id);
   pushUInt16(arr, type);
 
@@ -325,6 +330,10 @@ function fillDashBoardData(arr, station_id, type, name, temp, temp_min, temp_max
   pushUInt16(arr, co2);
   pushUInt16(arr, pressure*10);
   pushUInt16(arr, rain*1000);
+  pushUInt16(arr, wind_strength);
+  pushUInt16(arr, wind_angle);
+  pushUInt16(arr, gust_strength);
+  pushUInt16(arr, gust_angle);
 
   var measures_per_day    = 24;
   var measures_step_time  = 24 * 3600 / measures_per_day ;
@@ -389,7 +398,23 @@ function fillDashBoardData(arr, station_id, type, name, temp, temp_min, temp_max
   // sum_rain
   for(i=0; i<measures_per_day; i++){
     pushUInt16(arr, fixed_measures[i][5] != null ? fixed_measures[i][5] * 1000 : 0);
-  }  
+  } 
+  // wind_strength
+  for(i=0; i<measures_per_day; i++){
+    pushUInt16(arr, fixed_measures[i][6] != null ? fixed_measures[i][6] : 0);
+  }
+  // wind_angle
+  for(i=0; i<measures_per_day; i++){
+    pushUInt16(arr, fixed_measures[i][7] != null ? fixed_measures[i][7] : 0);
+  } 
+  // gust_strength
+  for(i=0; i<measures_per_day; i++){
+    pushUInt16(arr, fixed_measures[i][8] != null ? fixed_measures[i][8] : 0);
+  }
+  // gust_angle
+  for(i=0; i<measures_per_day; i++){
+    pushUInt16(arr, fixed_measures[i][9] != null ? fixed_measures[i][9] : 0);
+  } 
 }
 
 function renewToken(callback) {

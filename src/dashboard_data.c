@@ -2,12 +2,6 @@
 #include "dashboard_data.h"
 #include "utils.h"
 
-#define MAXIMUM_MODULES 6
-
-static DashboardData outdoor_dashboard;
-static DashboardData dashboards[MAXIMUM_MODULES]; //6 modules
-static int numberOfDashboards = 0;
-
 DashboardData* dashboard_data_create(){
 	DashboardData* dashboard_data = (DashboardData*)malloc(sizeof(DashboardData));
 	return dashboard_data;

@@ -102,7 +102,6 @@ static void animationUpdate(Animation *animation, const uint32_t progress) {
 	int percent = progress * 100 / ANIMATION_NORMALIZED_MAX;
 	DashboardData dashboard_data = dashboard_layer->dashboard_data;
 
-	MeasureType displayed_measure = dashboard_data.displayed_measure;
 	switch(dashboard_data.displayed_measure){
 		case Temperature: 	
 			;
@@ -132,6 +131,7 @@ static void animationUpdate(Animation *animation, const uint32_t progress) {
 			uint16_t rain = dashboard_data.rain*percent/100;
 			snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), 
 				"%d.%03d", rain/1000, rain%1000); break;
+		default:break;
 	}
 }
 
@@ -153,11 +153,15 @@ static void dashboard_layer_animate_graph(DashboardLayer *dashboard_layer){
 			data = dashboard_layer->dashboard_data.data_noise; break;	
 		case Rain : 		
 			data = dashboard_layer->dashboard_data.data_rain; break;
+		case WindStrength : 		
+			data = dashboard_layer->dashboard_data.data_wind_strength; break;
+		case GustStrength : 		
+			data = dashboard_layer->dashboard_data.data_gust_strength; break;
 		default : break;
 	}
 
 	int16_t maximum = INT16_MIN;
-	int16_t minimum =  INT16_MAX;
+	int16_t minimum = INT16_MAX;
 	for(size_t i=0; i<24; i++){
 		if(data[i] > maximum)
 			maximum = data[i];
@@ -193,6 +197,12 @@ static void dashboard_layer_animate_graph(DashboardLayer *dashboard_layer){
 		case Rain : 		
 			snprintf(max_t, sizeof(max_t), "%d.%03d mm", maximum/1000,maximum%1000); 
 			snprintf(min_t, sizeof(min_t), "%d.%03d mm", minimum/1000,minimum%1000); break;
+		case WindStrength : 		
+			snprintf(max_t, sizeof(max_t), "%d km/h", maximum); 
+			snprintf(min_t, sizeof(min_t), "%d km/h", minimum); break;
+		case GustStrength : 		
+			snprintf(max_t, sizeof(max_t), "%d km/h", maximum); 
+			snprintf(min_t, sizeof(min_t), "%d km/h", minimum); break;
 		default : break;
 	}
 
@@ -225,8 +235,13 @@ void dashboard_layer_update_data(DashboardLayer *dashboard_layer, DashboardData 
 		}
 		else if(dashboard_data->type == NAModule3){
 			snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), "%d.%03d", dashboard_data->rain/1000, dashboard_data->rain%1000);
-			snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "mm");
+			snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "Rain (mm)");
 			dashboard_layer->dashboard_data.displayed_measure = Rain;
+		}
+		else if(dashboard_data->type == NAModule2){
+			snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), "%d", dashboard_data->wind_strength);
+			snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "Gust : %d km/h", dashboard_data->gust_strength);
+			dashboard_layer->dashboard_data.displayed_measure = WindStrength;
 		}
 		else {
 		  snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), " ");
@@ -270,6 +285,13 @@ void dashboard_layer_switch_graph(DashboardLayer *dashboard_layer){
 				default : break;
 			}
 			break;
+		case NAModule2 :
+			switch(displayed_measure){
+				case WindStrength : displayed_measure = GustStrength; break;
+				case GustStrength : displayed_measure = WindStrength; break;
+				default : break;
+			}
+			break;
 		case NAModule3 :
 			switch(displayed_measure){
 				case Rain : 		dashboard_layer->dashboard_data.displayed_measure = Temperature; displayed_measure = Rain; break;
@@ -306,6 +328,10 @@ void dashboard_layer_switch_graph(DashboardLayer *dashboard_layer){
 				snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "Pressure (mb)"); break;
 			case Rain:			
 				snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "Rain (mm)"); break;
+			case WindStrength:			
+				snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "Wind (km/h)"); break;
+			case GustStrength:			
+				snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "Gust (km/h)"); break;
 			default:	
 				snprintf(dashboard_layer->text_main, sizeof(dashboard_layer->text_main), "000");		
 				snprintf(dashboard_layer->text_subtitle, sizeof(dashboard_layer->text_subtitle), "---"); break;
