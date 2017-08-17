@@ -122,7 +122,7 @@ function fetchData(){
     return renewToken(function() { fetchData() });
 
   var req = new XMLHttpRequest();
-  var url = 'https://api.netatmo.net/api/devicelist?access_token=' + encodeURIComponent(access_token);
+  var url = 'https://api.netatmo.net/api/getstationsdata?access_token=' + encodeURIComponent(access_token);
   console.log(url);
   sendRequest(url, "GET", 
   function(e) {
@@ -190,7 +190,7 @@ function fetchDataForDevices(device_ids){
 
   for(var d=0; d<device_ids.length; d++){
     var req = new XMLHttpRequest();
-    var url = 'https://api.netatmo.net/api/devicelist?access_token=' + encodeURIComponent(access_token) + '&device_id=' + encodeURIComponent(device_ids[d]);
+    var url = 'https://api.netatmo.net/api/getstationsdata?access_token=' + encodeURIComponent(access_token) + '&device_id=' + encodeURIComponent(device_ids[d]);
     console.log(url);
     (function(id) {
         sendRequest(url, "GET", 
@@ -198,9 +198,9 @@ function fetchDataForDevices(device_ids){
           var result = JSON.parse(e);
           if(result.body.devices.length > 0){
             fetchMeasures(id, result.body.devices[0]);
-          }
-          for(var i=0; i<result.body.modules.length; i++){
-            fetchMeasures(id, result.body.devices[0], result.body.modules, i);
+            for(var i=0; i<result.body.devices[0].modules.length; i++){
+              fetchMeasures(id, result.body.devices[0], result.body.devices[0].modules, i);
+            }
           }
         },
         function(e) {

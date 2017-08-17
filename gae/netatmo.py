@@ -38,7 +38,7 @@ class MainPage(webapp2.RequestHandler):
 
                 args['access_token'] 	= access_token
                 args['app_type'] 		= 'app_station'
-                result = query_json("https://api.netatmo.net/api/devicelist", urlencode(args))
+                result = query_json("https://api.netatmo.net/api/getstationsdata", urlencode(args))
 
                 logging.info('Device List ' + json.dumps(result))
 

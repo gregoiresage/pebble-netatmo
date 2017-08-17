@@ -80,7 +80,7 @@ static void layer_update_callback(Layer *me, GContext* ctx) {
 
 	graphics_draw_text(ctx,
       graph_layer->max,
-      fonts_get_system_font(FONT_KEY_FONT_FALLBACK),
+      fonts_get_system_font(FONT_KEY_GOTHIC_14),
       GRect(0, 0, layer_bounds.size.w, 20),
       GTextOverflowModeWordWrap,
       GTextAlignmentLeft,
@@ -88,7 +88,7 @@ static void layer_update_callback(Layer *me, GContext* ctx) {
 
 	graphics_draw_text(ctx,
       graph_layer->min,
-      fonts_get_system_font(FONT_KEY_FONT_FALLBACK),
+      fonts_get_system_font(FONT_KEY_GOTHIC_14),
       GRect(0, layer_bounds.size.h - 16, layer_bounds.size.w, 15),
       GTextOverflowModeWordWrap,
       GTextAlignmentLeft,
@@ -99,11 +99,7 @@ Layer* graph_layer_get_layer(GraphLayer *graph_layer){
 	return graph_layer->layer;
 }
 
-#ifdef PBL_COLOR
 static void animationUpdate(Animation *animation, const AnimationProgress progress) {
-#else
-static void animationUpdate(Animation *animation, const uint32_t progress) {
-#endif
 	GraphLayer *graph_layer = (GraphLayer *)animation_get_context(animation);
 	graph_layer->percent = progress * 100 / ANIMATION_NORMALIZED_MAX;
 	layer_mark_dirty(graph_layer->layer);

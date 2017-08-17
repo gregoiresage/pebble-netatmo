@@ -32,7 +32,8 @@
   },
   "targetPlatforms": [
     "aplite",
-    "basalt"
+    "basalt",
+    "diorite"
   ],
   "sdkVersion": "3"
 }

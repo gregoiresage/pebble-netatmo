@@ -93,11 +93,7 @@ Layer* dashboard_layer_get_layer(DashboardLayer *dashboard_layer){
 	return dashboard_layer->s_background;
 }
 
-#ifdef PBL_COLOR
 static void animationUpdate(Animation *animation, const AnimationProgress progress) {
-#else
-static void animationUpdate(Animation *animation, const uint32_t progress) {
-#endif
 	DashboardLayer *dashboard_layer = (DashboardLayer *)animation_get_context(animation);
 	int percent = progress * 100 / ANIMATION_NORMALIZED_MAX;
 	DashboardData dashboard_data = dashboard_layer->dashboard_data;
